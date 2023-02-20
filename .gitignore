@@ -1,0 +1,4 @@
+/RtMidiRecorder/obj/
+/RtMidiRecorder/bin/
+**/*.DotSettings.user
+.idea/
