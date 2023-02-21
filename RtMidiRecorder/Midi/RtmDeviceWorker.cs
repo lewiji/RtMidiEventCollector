@@ -52,10 +52,18 @@ internal sealed class RtmDeviceWorker : IMidiDeviceWorker, IDisposable
       {
          _logger.LogDebug($"{eventArgs.Timestamp}: {eventArgs.Message}");
          _midiEventCollector.Add(eventArgs);
-         
-         if (_idleTimer.Enabled) return;
-         _logger.LogInformation($"New MIDI inputs detected from idle, starting idle timeout...");
-         _idleTimer.Start();
+
+         if (!_idleTimer.Enabled)
+         {
+            _logger.LogInformation(
+               $"New MIDI inputs detected from idle, starting idle timeout...");
+            _idleTimer.Start();
+         }
+         else
+         {
+            _idleTimer.Stop();
+            _idleTimer.Start();
+         }
       };
 
       _midiInputClient.ActivateMessageReceivedEvent();
@@ -72,7 +80,7 @@ internal sealed class RtmDeviceWorker : IMidiDeviceWorker, IDisposable
          
          
          _logger.LogInformation($"Saving events to file...");
-         _midiEventsSerialiser.WriteEventsToFile("test.mid", elapsedEvents);
+         _midiEventsSerialiser.WriteEventsToFile($"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid", elapsedEvents);
          _logger.LogInformation($"Saved.");
       };
       _logger.LogInformation($"Set idle detection timer to {_idleTimer.Interval}.");

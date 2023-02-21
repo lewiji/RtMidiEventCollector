@@ -10,6 +10,7 @@ public class MidiEventsSerialiser : IMidiEventsSerialiser
       var midiStream = new FileStream(path, FileMode.OpenOrCreate);
       using (var midiStreamWriter = new MidiStreamWriter(midiStream))
       {
+         long duration = 0;
          midiStreamWriter
             .WriteHeader(MidiConstants.Formats.MultiSimultaneousTracks, 2);
 
@@ -21,15 +22,20 @@ public class MidiEventsSerialiser : IMidiEventsSerialiser
             .WriteEndTrack();
 
          midiStreamWriter.WriteStartTrack();
-         foreach (var rtMidiEvent in events)
+         for (var index = 0; index < events.Length; index++)
          {
+            var rtMidiEvent = events[index];
             if (rtMidiEvent.MessageType == MidiMessageType.NoteOn)
             {
+               index += 1;
+               var rtMidiEventOff = events[index];
+               var noteLength = (rtMidiEventOff.Time.Ticks - rtMidiEvent.Time.Ticks) / 120 / 60;
+
                midiStreamWriter.WriteNoteAndTick(
-                  (byte)rtMidiEvent.Channel, 
+                  (byte)rtMidiEvent.Channel,
                   (MidiConstants.MidiNoteNumbers)rtMidiEvent.Note.GetByteRepresentation(),
-                  (byte)rtMidiEvent.Velocity, 
-                  MidiStreamWriter.NoteDurations.SixteenthNote);
+                  (byte)rtMidiEvent.Velocity,
+                  noteLength);
             }
          }
 
