@@ -1,7 +1,7 @@
 using RtMidi.Net;
 using RtMidi.Net.Events;
 
-namespace RtMidiRecorder.Midi;
+namespace RtMidiRecorder.Midi.Data;
 
 public class MidiEventQueue : IMidiEventCollector
 {

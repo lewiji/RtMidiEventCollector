@@ -1,7 +1,7 @@
 using RtMidi.Net;
 using RtMidi.Net.Enums;
 
-namespace RtMidiRecorder.Midi;
+namespace RtMidiRecorder.Midi.Data;
 
 public struct RtMidiEvent
 {

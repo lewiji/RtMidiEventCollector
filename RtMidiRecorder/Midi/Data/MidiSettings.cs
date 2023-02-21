@@ -1,4 +1,4 @@
-namespace RtMidiRecorder.Midi;
+namespace RtMidiRecorder.Midi.Data;
 
 internal sealed class MidiSettings
 {

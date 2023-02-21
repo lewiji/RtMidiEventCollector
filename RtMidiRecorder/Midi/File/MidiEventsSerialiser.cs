@@ -1,5 +1,6 @@
 using Hearn.Midi;
 using RtMidi.Net.Enums;
+using RtMidiRecorder.Midi.Data;
 
 namespace RtMidiRecorder.Midi.File;
 
