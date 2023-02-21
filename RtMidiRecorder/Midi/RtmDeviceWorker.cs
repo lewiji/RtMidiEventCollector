@@ -15,7 +15,7 @@ internal sealed class RtmDeviceWorker : IMidiDeviceWorker, IDisposable
    readonly IMidiEventCollector _midiEventCollector;
    readonly IMidiEventsSerialiser _midiEventsSerialiser;
    MidiInputClient? _midiInputClient;
-   Timer _idleTimer;
+   Timer? _idleTimer;
 
    public RtmDeviceWorker(
       IMidiEventCollector eventCollector,
@@ -53,7 +53,7 @@ internal sealed class RtmDeviceWorker : IMidiDeviceWorker, IDisposable
          _logger.LogDebug($"{eventArgs.Timestamp}: {eventArgs.Message}");
          _midiEventCollector.Add(eventArgs);
 
-         if (!_idleTimer.Enabled)
+         if (_idleTimer is { Enabled: false })
          {
             _logger.LogInformation(
                $"New MIDI inputs detected from idle, starting idle timeout...");
@@ -61,8 +61,8 @@ internal sealed class RtmDeviceWorker : IMidiDeviceWorker, IDisposable
          }
          else
          {
-            _idleTimer.Stop();
-            _idleTimer.Start();
+            _idleTimer?.Stop();
+            _idleTimer?.Start();
          }
       };
 
