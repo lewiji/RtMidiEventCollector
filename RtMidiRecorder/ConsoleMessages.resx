@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <root>
-    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata"
+                id="root"
                 xmlns="">
         <xsd:element name="root" msdata:IsDataSet="true">
 
@@ -34,5 +35,8 @@
     </data>
     <data name="Prompt_DevicePort_Entry" xml:space="preserve">
         <value>Enter device port number: </value>
+    </data>
+    <data name="Task_canceled_shutting_down" xml:space="preserve">
+        <value>Task canceled, shutting down.</value>
     </data>
 </root>

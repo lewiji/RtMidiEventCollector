@@ -8,6 +8,9 @@
 //------------------------------------------------------------------------------
 
 namespace RtMidiRecorder {
+    using System;
+    
+    
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
@@ -63,6 +66,12 @@ namespace RtMidiRecorder {
         internal static string Prompt_DevicePort_Entry {
             get {
                 return ResourceManager.GetString("Prompt_DevicePort_Entry", resourceCulture);
+            }
+        }
+        
+        internal static string Task_canceled_shutting_down {
+            get {
+                return ResourceManager.GetString("Task_canceled_shutting_down", resourceCulture);
             }
         }
     }
