@@ -11,13 +11,14 @@ public class MidiEventQueue : IMidiEventCollector
       var mEvent = new RtMidiEvent
       {
          MessageType = eventArgs.Message.Type,
-         Time = eventArgs.Timestamp
+         Time = eventArgs.Timestamp,
       };
       
       if (eventArgs.Message is MidiMessageNote messageNote)
       {
          mEvent.Note = messageNote.Note;
          mEvent.Velocity = messageNote.Velocity;
+         mEvent.Channel = (uint)messageNote.Channel;
       }
       
       _midiEvents.Enqueue(mEvent);

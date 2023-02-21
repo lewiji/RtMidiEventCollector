@@ -8,14 +8,15 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Hearn.Midi" Version="1.0.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="7.0.0" />
     </ItemGroup>
     
     <ItemGroup>
         <PackageReference Include="RtMidi.Net" Version="1.0.0" />
-        <Content Update="lib\librtmidi.so">
+        <None Include="lib\librtmidi.so" Link="\%(Filename)%(Extension)" >
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
+        </None>
     </ItemGroup>
 
     <ItemGroup>

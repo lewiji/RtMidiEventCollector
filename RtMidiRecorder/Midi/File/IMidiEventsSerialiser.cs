@@ -1,0 +1,6 @@
+namespace RtMidiRecorder.Midi.File;
+
+public interface IMidiEventsSerialiser
+{
+   void WriteEventsToFile(string path, RtMidiEvent[] events);
+}

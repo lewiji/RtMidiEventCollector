@@ -9,4 +9,5 @@ public struct RtMidiEvent
    public MidiMessageType MessageType;
    public MidiNote Note;
    public uint Velocity;
+   public uint Channel;
 }

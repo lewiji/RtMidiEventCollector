@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RtMidi.Net;
 using RtMidi.Net.Enums;
+using RtMidiRecorder.Midi.File;
 using Timer = System.Timers.Timer;
 
 namespace RtMidiRecorder.Midi;
@@ -12,13 +13,18 @@ internal sealed class RtmDeviceWorker : IMidiDeviceWorker, IDisposable
    readonly ILogger _logger;
    readonly IOptions<MidiSettings> _midiSettings;
    readonly IMidiEventCollector _midiEventCollector;
+   readonly IMidiEventsSerialiser _midiEventsSerialiser;
    MidiInputClient? _midiInputClient;
    Timer _idleTimer;
 
-   public RtmDeviceWorker(IMidiEventCollector eventCollector, IOptions<MidiSettings> midiSettings,
+   public RtmDeviceWorker(
+      IMidiEventCollector eventCollector,
+      IMidiEventsSerialiser eventsSerialiser,
+      IOptions<MidiSettings> midiSettings,
       ILogger<RtmDeviceWorker> logger)
    {
       _midiEventCollector = eventCollector;
+      _midiEventsSerialiser = eventsSerialiser;
       _midiSettings = midiSettings;
       _logger = logger;
    }
@@ -63,6 +69,11 @@ internal sealed class RtmDeviceWorker : IMidiDeviceWorker, IDisposable
          var elapsedEvents = _midiEventCollector.Collect();
          _logger.LogInformation($"Collected {elapsedEvents.Length} events.");
          _idleTimer.Stop();
+         
+         
+         _logger.LogInformation($"Saving events to file...");
+         _midiEventsSerialiser.WriteEventsToFile("test.mid", elapsedEvents);
+         _logger.LogInformation($"Saved.");
       };
       _logger.LogInformation($"Set idle detection timer to {_idleTimer.Interval}.");
       

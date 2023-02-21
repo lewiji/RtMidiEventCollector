@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RtMidiRecorder.Midi;
+using RtMidiRecorder.Midi.File;
 
 namespace RtMidiRecorder;
 
@@ -17,7 +18,8 @@ internal sealed class Program
             collection
                .AddHostedService<MidiInputService>()
                .AddSingleton<IMidiDeviceWorker, RtmDeviceWorker>()
-               .AddScoped<IMidiEventCollector, MidiEventQueue>();
+               .AddScoped<IMidiEventCollector, MidiEventQueue>()
+               .AddScoped<IMidiEventsSerialiser, MidiEventsSerialiser>();
 
             collection.AddOptions<MidiSettings>()
                .Bind(context.Configuration.GetSection("Midi"));
