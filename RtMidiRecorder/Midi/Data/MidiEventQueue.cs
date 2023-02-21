@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using RtMidi.Net;
 using RtMidi.Net.Events;
 
@@ -6,9 +7,16 @@ namespace RtMidiRecorder.Midi.Data;
 public class MidiEventQueue : IMidiEventCollector
 {
    readonly Queue<RtMidiEvent> _midiEvents = new();
+   readonly ILogger _logger;
+
+   public MidiEventQueue(ILogger<MidiEventQueue> logger)
+   {
+      _logger = logger;
+   }
 
    public void Add(MidiMessageReceivedEventArgs eventArgs)
    {
+      _logger.LogDebug($"{eventArgs.Timestamp}: {eventArgs.Message}");
       var mEvent = new RtMidiEvent
       {
          MessageType = eventArgs.Message.Type,

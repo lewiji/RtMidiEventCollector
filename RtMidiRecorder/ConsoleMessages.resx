@@ -39,4 +39,34 @@
     <data name="Task_canceled_shutting_down" xml:space="preserve">
         <value>Task canceled, shutting down.</value>
     </data>
+    <data name="Exiting_with_return_code" xml:space="preserve">
+        <value>Exiting with return code: {0}</value>
+    </data>
+    <data name="Starting_MIDI_device_worker" xml:space="preserve">
+        <value>Starting MIDI device worker...</value>
+    </data>
+    <data name="Connected_to_Midi_Input_" xml:space="preserve">
+        <value>Connected to Midi Input: {0}.</value>
+    </data>
+    <data name="Started_idle_timer_" xml:space="preserve">
+        <value>Started idle detection timer with interval: {0}.</value>
+    </data>
+    <data name="Collected__n__events_" xml:space="preserve">
+        <value>Collected {0} events.</value>
+    </data>
+    <data name="MIDI_events_detected" xml:space="preserve">
+        <value>New MIDI events detected during idle, restarting idle timeout...</value>
+    </data>
+    <data name="Exception_initiating_MIDI_device" xml:space="preserve">
+        <value>Unhandled exception when initiating MIDI device connection, stopping service...</value>
+    </data>
+    <data name="Saving_midi_to_path" xml:space="preserve">
+        <value>Saving midi to {0}...</value>
+    </data>
+    <data name="Saved_midi_" xml:space="preserve">
+        <value>Saved midi.</value>
+    </data>
+    <data name="Error_while_serializing_midi_events_" xml:space="preserve">
+        <value>Error while serializing midi events.</value>
+    </data>
 </root>

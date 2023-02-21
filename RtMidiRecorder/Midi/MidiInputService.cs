@@ -39,17 +39,14 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
    public Task StartAsync(CancellationToken cancellationToken)
    {
-      var ver = GetType().Assembly.GetName().Version?.ToString() ?? "prerelease";
-      _logger.LogInformation($"RtMidiRecorder {ver}");
-      
+      _logger.LogInformation($"RtMidiRecorder {GetType().Assembly.GetName().Version!.ToString()}");
       Task.Run(TryConnectToMidiInput, cancellationToken);
       return Task.Delay(-1, cancellationToken);
    }
 
    public Task StopAsync(CancellationToken cancellationToken)
    {
-      _logger.LogInformation($"Exiting with return code: {_exitCode}");
-      
+      _logger.LogInformation(string.Format(ConsoleMessages.Exiting_with_return_code, _exitCode));
       Environment.ExitCode = _exitCode.GetValueOrDefault(-1);
       Dispose();
       return Task.CompletedTask;
@@ -59,13 +56,13 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    {
       try
       {
-         _logger.LogDebug("Starting MIDI device worker...");
+         _logger.LogDebug(ConsoleMessages.Starting_MIDI_device_worker);
          await InitiateMidiDeviceConnection();
          _exitCode = 0;
       }
       catch (Exception ex)
       {
-         _logger.LogError(ex, "Unhandled exception when initiating MIDI device connection, stopping service...");
+         _logger.LogError(ex, ConsoleMessages.Exception_initiating_MIDI_device);
          _exitCode = 1;
          _appLifetime.StopApplication();
       }
@@ -80,22 +77,22 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       _midiInputClient.OnMessageReceived += OnMidiMessageReceived;
       _midiInputClient.ActivateMessageReceivedEvent();
       _midiInputClient.Open();
-
-      _logger.LogInformation($"Connected to Midi Input: {device.Name}.");
+      _logger.LogInformation(string.Format(ConsoleMessages.Connected_to_Midi_Input_, device.Name));
 
       _idleTimer.Elapsed += OnIdleTimerElapsed;
-      _logger.LogInformation($"Set idle detection timer to {_idleTimer.Interval}.");
+      _logger.LogInformation(string.Format(ConsoleMessages.Started_idle_timer_, _idleTimer.Interval));
 
       return Task.CompletedTask;
    }
 
-   void OnIdleTimerElapsed(object sender, ElapsedEventArgs args)
+   void OnIdleTimerElapsed(object? sender, ElapsedEventArgs args)
    {
       if (!_midiEventCollector.HasEvents()) return;
-      
       _idleTimer.Stop();
+      
       var elapsedEvents = _midiEventCollector.Collect();
-      _logger.LogInformation($"Collected {elapsedEvents.Length} events.");
+      _logger.LogInformation(string.Format(ConsoleMessages.Collected__n__events_, elapsedEvents.Length));
+      
       _midiEventsSerialiser.WriteEventsToFile($"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid", elapsedEvents);
    }
 
@@ -147,18 +144,18 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
    void OnMidiMessageReceived(object? midiClient, MidiMessageReceivedEventArgs eventArgs)
    {
-      _logger.LogDebug($"{eventArgs.Timestamp}: {eventArgs.Message}");
       _midiEventCollector.Add(eventArgs);
 
       if (_idleTimer is { Enabled: false })
       {
-         _logger.LogInformation("New MIDI inputs detected from idle, starting idle timeout...");
+         _logger.LogInformation(ConsoleMessages.MIDI_events_detected);
          _idleTimer.Start();
       }
       else
       {
-         _idleTimer?.Stop();
-         _idleTimer?.Start();
+         // Always restart timer if a new event is received and it's Enabled
+         _idleTimer.Stop();
+         _idleTimer.Start();
       }
    }
 

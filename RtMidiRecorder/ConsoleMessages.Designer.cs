@@ -74,5 +74,65 @@ namespace RtMidiRecorder {
                 return ResourceManager.GetString("Task_canceled_shutting_down", resourceCulture);
             }
         }
+        
+        internal static string Exiting_with_return_code {
+            get {
+                return ResourceManager.GetString("Exiting_with_return_code", resourceCulture);
+            }
+        }
+        
+        internal static string Starting_MIDI_device_worker {
+            get {
+                return ResourceManager.GetString("Starting_MIDI_device_worker", resourceCulture);
+            }
+        }
+        
+        internal static string Connected_to_Midi_Input_ {
+            get {
+                return ResourceManager.GetString("Connected_to_Midi_Input_", resourceCulture);
+            }
+        }
+        
+        internal static string Started_idle_timer_ {
+            get {
+                return ResourceManager.GetString("Started_idle_timer_", resourceCulture);
+            }
+        }
+        
+        internal static string Collected__n__events_ {
+            get {
+                return ResourceManager.GetString("Collected__n__events_", resourceCulture);
+            }
+        }
+        
+        internal static string MIDI_events_detected {
+            get {
+                return ResourceManager.GetString("MIDI_events_detected", resourceCulture);
+            }
+        }
+        
+        internal static string Exception_initiating_MIDI_device {
+            get {
+                return ResourceManager.GetString("Exception_initiating_MIDI_device", resourceCulture);
+            }
+        }
+        
+        internal static string Saving_midi_to_path {
+            get {
+                return ResourceManager.GetString("Saving_midi_to_path", resourceCulture);
+            }
+        }
+        
+        internal static string Saved_midi_ {
+            get {
+                return ResourceManager.GetString("Saved_midi_", resourceCulture);
+            }
+        }
+        
+        internal static string Error_while_serializing_midi_events_ {
+            get {
+                return ResourceManager.GetString("Error_while_serializing_midi_events_", resourceCulture);
+            }
+        }
     }
 }

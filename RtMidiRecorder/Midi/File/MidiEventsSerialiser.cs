@@ -18,7 +18,7 @@ public class MidiEventsSerialiser : IMidiEventsSerialiser
    {
       try
       {
-         _logger.LogInformation($"Saving midi to {path}...");
+         _logger.LogInformation(string.Format(ConsoleMessages.Saving_midi_to_path, path));
 
          var midiStream = new FileStream(path, FileMode.OpenOrCreate);
          using var midiStreamWriter = new MidiStreamWriter(midiStream);
@@ -40,7 +40,7 @@ public class MidiEventsSerialiser : IMidiEventsSerialiser
 
          foreach (var noteOnEvent in notesOn)
          {
-            var noteOffEvent = FirstMatchingNoteOffEvent(notesOff, noteOnEvent);
+            var noteOffEvent = RemoveAndReturnFirstMatchingNoteOff(notesOff, noteOnEvent);
             var noteLength = (noteOnEvent.Time.Duration().Ticks - noteOffEvent.Time.Duration().Ticks) / 120 / 60;
 
             midiStreamWriter.WriteNote(
@@ -52,15 +52,15 @@ public class MidiEventsSerialiser : IMidiEventsSerialiser
          }
 
          midiStreamWriter.WriteEndTrack();
-         _logger.LogInformation("Saved midi.");
+         _logger.LogInformation(ConsoleMessages.Saved_midi_);
       }
       catch (Exception e)
       {
-         _logger.LogError(e, "Error while serializing midi events.");
+         _logger.LogError(e, ConsoleMessages.Error_while_serializing_midi_events_);
       }
    }
 
-   static RtMidiEvent FirstMatchingNoteOffEvent(ICollection<RtMidiEvent> notesOff, RtMidiEvent noteOnEvent)
+   static RtMidiEvent RemoveAndReturnFirstMatchingNoteOff(ICollection<RtMidiEvent> notesOff, RtMidiEvent noteOnEvent)
    {
       var noteOff = notesOff.FirstOrDefault(e =>
          e.MessageType == MidiMessageType.NoteOff &&
