@@ -55,7 +55,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
          var onNotes = rtMidiEvents.Where(e => e.MessageType == MidiMessageType.NoteOn).ToList();
          onNotes.RemoveAt(0);
          var offNotes = rtMidiEvents.Where(e => e.MessageType == MidiMessageType.NoteOff).ToList();
-         var tickWriteStack = new Stack<RtMidiEvent>();
+         var heldNotesTickLengths = new Dictionary<RtMidiEvent, long>();
 
          while (allNotes.Count > 0)
          {
@@ -68,35 +68,84 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
                      e.MessageType == MidiMessageType.NoteOff &&
                      e.Note.GetByteRepresentation() == noteEvent.Note.GetByteRepresentation());
                   offNotes.Remove(noteOff);
-                  tickWriteStack.Push(noteOff);
 
-                  var noteLength = _midiSettings.Value.DrumMode
-                     ? (long)MidiStreamWriter.NoteDurations.SixteenthNote
-                     : noteOff.Time.MidiTicks();
-
-                  _logger.LogDebug($"Note on {noteOff.Note.GetName()}: {noteLength} midi ticks");
-
+                  long noteLength = noteOff.Time.MidiTicks();
+                  
+                  foreach (var midiEvent in allNotes)
+                  {
+                     if (noteOff.Equals(midiEvent))
+                     {
+                        break;
+                     }
+                     noteLength += midiEvent.Time.MidiTicks();
+                  }
+                  
                   var channel = _midiSettings.Value.DrumMode ? 9 : _midiSettings.Value.Channel ?? noteEvent.Channel;
 
+                  _logger.LogDebug($"NoteOn {noteOff.Note.GetName()}: {noteLength} midi ticks");
                   midiStreamWriter.WriteNote(
                      (byte)channel,
                      (MidiConstants.MidiNoteNumbers)noteEvent.Note.GetByteRepresentation(),
                      (byte)noteEvent.Velocity,
                      noteLength);
+                  // If the next event in the queue is this note's NoteOff, process it immediately
+                  if (allNotes.TryPeek(out var maybeNoteOff) && maybeNoteOff.Equals(noteOff))
+                  {
+                     var tickLength = noteLength;
+                     allNotes.Dequeue();
+                     
+                     if (allNotes.TryPeek(out var nextNote))// && nextNote.MessageType == MidiMessageType.NoteOn)
+                     {
+                        tickLength += nextNote.Time.MidiTicks();
+                     }
 
+                     _logger.LogDebug($"NoteOff {noteOff.Note.GetName()}: {noteLength} midi ticks");
+                     midiStreamWriter.Tick(tickLength);
+                  }
+                  else
+                  {
+                     // Tick for the next note
+                     if (allNotes.TryPeek(out var nextNote) && nextNote.MessageType == MidiMessageType.NoteOn)
+                     {
+                        midiStreamWriter.Tick(nextNote.Time.MidiTicks());
+                     }
+                     
+                     var deferredTickLength = noteLength;
+                     foreach (var midiEvent in allNotes)
+                     {
+                        if (noteOff.Equals(midiEvent))
+                        {
+                           break;
+                        }
+                        deferredTickLength -= midiEvent.Time.MidiTicks();
+                     }
+                     heldNotesTickLengths.Add(noteOff, deferredTickLength);
+                     _logger.LogDebug($"Deferring Tick command due to held note: {noteOff.Note.GetName()}: {deferredTickLength} midi ticks");
+                  }
 
                   break;
                }
                case MidiMessageType.NoteOff:
                {
-                  var nextNoteOn = onNotes.FirstOrDefault(e => e.MessageType == MidiMessageType.NoteOn);
-                  onNotes.Remove(nextNoteOn);
-                  // tick duration is noteOff duration + time til next note. last tick has no duration
-                  var tickDuration = Equals(nextNoteOn, default(RtMidiEvent))
-                     ? noteEvent.Time.MidiTicks()
-                     : noteEvent.Time.MidiTicks() + nextNoteOn.Time.MidiTicks();
-                  midiStreamWriter.Tick(tickDuration);
+                  long tickDuration = 0;
+                  if (heldNotesTickLengths.TryGetValue(noteEvent, out var heldLength))
+                  {
+                     _logger.LogDebug($"Held note NoteOff received, adding {heldLength} ticks...");
+                     tickDuration += heldLength;
+                     heldNotesTickLengths.Remove(noteEvent);
+                  }
+                  else
+                  {
+                     tickDuration = noteEvent.Time.MidiTicks();
+                     if (allNotes.TryPeek(out var nextNote) && nextNote.MessageType == MidiMessageType.NoteOn)
+                     {
+                        tickDuration += nextNote.Time.MidiTicks();
+                     }
+                  }
+
                   _logger.LogDebug($"Note off: {noteEvent.Note.GetName()}: {tickDuration} midi ticks");
+                  midiStreamWriter.Tick(tickDuration);
+                  
                   break;
                }
             }
@@ -104,6 +153,11 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
 
          midiStreamWriter.WriteEndTrack();
          _logger.LogInformation(ConsoleMessages.Saved_midi_);
+
+         if (heldNotesTickLengths.Count > 0)
+         {
+            _logger.LogWarning("Held notes dictionary contained entries after MIDI serialisation.");
+         }
       }
       catch (Exception e)
       {
