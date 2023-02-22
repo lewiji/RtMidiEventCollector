@@ -10,13 +10,14 @@ using RtMidiRecorder.Midi.File;
 
 namespace RtMidiRecorder;
 
-internal static class Program
+internal sealed class Program
 {
+   static ILogger? _logger;
    static async Task Main(string[] args)
    {
       try
       {
-         await Host.CreateDefaultBuilder(args)
+         var builder = Host.CreateDefaultBuilder(args)
             .UseSystemd()
             .UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!)
             .ConfigureServices((context, collection) =>
@@ -28,12 +29,22 @@ internal static class Program
                   .AddLogging()
                   .AddOptions<MidiSettings>()
                   .Bind(context.Configuration.GetSection("Midi"));
-            })
-            .RunConsoleAsync();
+
+
+               _logger = LoggerFactory.Create(config =>
+               {
+                  config
+                     .AddConsole()
+                     .AddConfiguration(context.Configuration.GetSection("Logging"));
+               }).CreateLogger("Program");
+            });
+         
+
+         await builder.RunConsoleAsync();
       }
       catch (TaskCanceledException)
       {
-         Console.WriteLine(ConsoleMessages.Task_canceled_shutting_down);
+         _logger?.LogInformation(ConsoleMessages.Task_canceled_shutting_down);
       }
    }
 }
