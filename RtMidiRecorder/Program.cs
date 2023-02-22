@@ -1,9 +1,7 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic.CompilerServices;
 using RtMidiRecorder.Midi;
 using RtMidiRecorder.Midi.Data;
 using RtMidiRecorder.Midi.File;
@@ -13,6 +11,7 @@ namespace RtMidiRecorder;
 internal sealed class Program
 {
    static ILogger? _logger;
+
    static async Task Main(string[] args)
    {
       try
@@ -38,7 +37,7 @@ internal sealed class Program
                      .AddConfiguration(context.Configuration.GetSection("Logging"));
                }).CreateLogger("Program");
             });
-         
+
 
          await builder.RunConsoleAsync();
       }

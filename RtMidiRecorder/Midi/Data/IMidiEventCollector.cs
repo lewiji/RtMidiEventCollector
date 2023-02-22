@@ -7,6 +7,6 @@ public interface IMidiEventCollector
 {
    void Add(MidiMessageReceivedEventArgs eventArgs);
    void Clear();
-   RtMidiEvent[] Collect(bool clear = true);
+   IEnumerable<RtMidiEvent> Collect(bool clear = true);
    bool HasEvents();
 }

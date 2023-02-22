@@ -1,21 +1,33 @@
 using Hearn.Midi;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RtMidi.Net.Enums;
 using RtMidiRecorder.Midi.Data;
+using RtMidiRecorder.Midi.Extensions;
 
 namespace RtMidiRecorder.Midi.File;
 
-public class MidiEventsSerialiser : IMidiEventsSerialiser
+internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
 {
+   const int DefaultTempo = 120;
+   const int Ppq = 96; // hardcoded in Hearn.Midi
+   const float USecPerMinute = 60000000.0f;
+   public static float USecPerMidiTick = CalculateUSecPerMidiTick(DefaultTempo);
    readonly ILogger _logger;
+   readonly IOptions<MidiSettings> _midiSettings;
 
-   public MidiEventsSerialiser(ILogger<MidiEventsSerialiser> logger)
+   public MidiEventsSerialiser(ILogger<MidiEventsSerialiser> logger, IOptions<MidiSettings> midiSettings)
    {
       _logger = logger;
+      _midiSettings = midiSettings;
+      WriteTestMidi();
    }
 
-   public void WriteEventsToFile(string path, RtMidiEvent[] events)
+   public void WriteEventsToFile(string path, IEnumerable<RtMidiEvent> events, int tempo = DefaultTempo)
    {
+      USecPerMidiTick = CalculateUSecPerMidiTick(tempo);
+
+      _logger.LogDebug($"usecs per tick: {USecPerMidiTick}");
       try
       {
          _logger.LogInformation(string.Format(ConsoleMessages.Saving_midi_to_path, path));
@@ -29,26 +41,65 @@ public class MidiEventsSerialiser : IMidiEventsSerialiser
          midiStreamWriter
             .WriteStartTrack()
             .WriteTimeSignature(4, 4)
-            .WriteTempo(120)
-            .WriteString(MidiConstants.StringTypes.TrackName, "CollectedEvents")
+            .WriteTempo(tempo)
+            .WriteString(MidiConstants.StringTypes.TrackName, "Metadata")
             .WriteEndTrack();
 
          midiStreamWriter.WriteStartTrack();
+         midiStreamWriter.WriteString(MidiConstants.StringTypes.TrackName, "CollectedEvents");
 
-         var notesOn = events.Where(e => e.MessageType == MidiMessageType.NoteOn);
-         var notesOff = events.Where(e => e.MessageType == MidiMessageType.NoteOff).ToList();
+         var rtMidiEvents = events as RtMidiEvent[] ?? events.ToArray();
+         var allNotes =
+            new Queue<RtMidiEvent>(rtMidiEvents.Where(e =>
+               e.MessageType is MidiMessageType.NoteOn or MidiMessageType.NoteOff));
+         var onNotes = rtMidiEvents.Where(e => e.MessageType == MidiMessageType.NoteOn).ToList();
+         onNotes.RemoveAt(0);
+         var offNotes = rtMidiEvents.Where(e => e.MessageType == MidiMessageType.NoteOff).ToList();
+         var tickWriteStack = new Stack<RtMidiEvent>();
 
-         foreach (var noteOnEvent in notesOn)
+         while (allNotes.Count > 0)
          {
-            var noteOffEvent = RemoveAndReturnFirstMatchingNoteOff(notesOff, noteOnEvent);
-            var noteLength = (noteOnEvent.Time.Duration().Ticks - noteOffEvent.Time.Duration().Ticks) / 120 / 60;
+            var noteEvent = allNotes.Dequeue();
+            switch (noteEvent.MessageType)
+            {
+               case MidiMessageType.NoteOn:
+               {
+                  var noteOff = offNotes.FirstOrDefault(e =>
+                     e.MessageType == MidiMessageType.NoteOff &&
+                     e.Note.GetByteRepresentation() == noteEvent.Note.GetByteRepresentation());
+                  offNotes.Remove(noteOff);
+                  tickWriteStack.Push(noteOff);
 
-            midiStreamWriter.WriteNote(
-               (byte)noteOnEvent.Channel,
-               (MidiConstants.MidiNoteNumbers)noteOnEvent.Note.GetByteRepresentation(),
-               (byte)noteOnEvent.Velocity,
-               noteLength);
-            midiStreamWriter.Tick(noteOffEvent.Time.Duration().Ticks / 120 / 60);
+                  var noteLength = _midiSettings.Value.DrumMode
+                     ? (long)MidiStreamWriter.NoteDurations.SixteenthNote
+                     : noteOff.Time.MidiTicks();
+
+                  _logger.LogDebug($"Note on {noteOff.Note.GetName()}: {noteLength} midi ticks");
+
+                  var channel = _midiSettings.Value.DrumMode ? 9 : _midiSettings.Value.Channel ?? noteEvent.Channel;
+
+                  midiStreamWriter.WriteNote(
+                     (byte)channel,
+                     (MidiConstants.MidiNoteNumbers)noteEvent.Note.GetByteRepresentation(),
+                     (byte)noteEvent.Velocity,
+                     noteLength);
+
+
+                  break;
+               }
+               case MidiMessageType.NoteOff:
+               {
+                  var nextNoteOn = onNotes.FirstOrDefault(e => e.MessageType == MidiMessageType.NoteOn);
+                  onNotes.Remove(nextNoteOn);
+                  // tick duration is noteOff duration + time til next note. last tick has no duration
+                  var tickDuration = Equals(nextNoteOn, default(RtMidiEvent))
+                     ? noteEvent.Time.MidiTicks()
+                     : noteEvent.Time.MidiTicks() + nextNoteOn.Time.MidiTicks();
+                  midiStreamWriter.Tick(tickDuration);
+                  _logger.LogDebug($"Note off: {noteEvent.Note.GetName()}: {tickDuration} midi ticks");
+                  break;
+               }
+            }
          }
 
          midiStreamWriter.WriteEndTrack();
@@ -60,12 +111,49 @@ public class MidiEventsSerialiser : IMidiEventsSerialiser
       }
    }
 
-   static RtMidiEvent RemoveAndReturnFirstMatchingNoteOff(ICollection<RtMidiEvent> notesOff, RtMidiEvent noteOnEvent)
+   static float CalculateUSecPerMidiTick(float tempo)
    {
-      var noteOff = notesOff.FirstOrDefault(e =>
-         e.MessageType == MidiMessageType.NoteOff &&
-         e.Note.GetByteRepresentation() == noteOnEvent.Note.GetByteRepresentation());
-      notesOff.Remove(noteOff);
-      return noteOff;
+      var uSecPerBeat = USecPerMinute / tempo;
+      return uSecPerBeat / Ppq;
+   }
+
+   public void WriteTestMidi()
+   {
+      var tempo = DefaultTempo;
+      var path = $"test-{DateTime.Now:M-dd-HHmmss}.mid";
+      USecPerMidiTick = CalculateUSecPerMidiTick(tempo);
+
+      _logger.LogDebug($"usecs per tick: {USecPerMidiTick}");
+      _logger.LogInformation(string.Format(ConsoleMessages.Saving_midi_to_path, path));
+
+      var midiStream = new FileStream(path, FileMode.OpenOrCreate);
+      using var midiStreamWriter = new MidiStreamWriter(midiStream);
+
+      midiStreamWriter
+         .WriteHeader(MidiConstants.Formats.MultiSimultaneousTracks, 2);
+
+      midiStreamWriter
+         .WriteStartTrack()
+         .WriteTimeSignature(4, 4)
+         .WriteTempo(tempo)
+         .WriteString(MidiConstants.StringTypes.TrackName, "Metadata")
+         .WriteEndTrack();
+
+      midiStreamWriter.WriteStartTrack();
+      midiStreamWriter.WriteString(MidiConstants.StringTypes.TrackName, "CollectedEvents");
+      midiStreamWriter
+         .WriteNote(0, MidiConstants.MidiNoteNumbers.C4, 127, MidiStreamWriter.NoteDurations.Breve)
+         .WriteNote(0, MidiConstants.MidiNoteNumbers.E4, 127, MidiStreamWriter.NoteDurations.Triplet)
+         .Tick(MidiStreamWriter.NoteDurations.EighthNote)
+         .WriteNote(0, MidiConstants.MidiNoteNumbers.E4, 127, MidiStreamWriter.NoteDurations.Triplet)
+         .Tick(MidiStreamWriter.NoteDurations.EighthNote)
+         .WriteNote(0, MidiConstants.MidiNoteNumbers.E4, 127, MidiStreamWriter.NoteDurations.Triplet)
+         .Tick(MidiStreamWriter.NoteDurations.EighthNote)
+         .WriteNote(0, MidiConstants.MidiNoteNumbers.E4, 127, MidiStreamWriter.NoteDurations.Triplet)
+         .Tick(MidiStreamWriter.NoteDurations.EighthNote)
+         .Tick(MidiStreamWriter.NoteDurations.WholeNote);
+
+      midiStreamWriter.WriteEndTrack();
+      _logger.LogInformation(ConsoleMessages.Saved_midi_);
    }
 }

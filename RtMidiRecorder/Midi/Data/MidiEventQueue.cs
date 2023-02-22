@@ -1,13 +1,14 @@
 using Microsoft.Extensions.Logging;
 using RtMidi.Net;
 using RtMidi.Net.Events;
+using RtMidiRecorder.Midi.Extensions;
 
 namespace RtMidiRecorder.Midi.Data;
 
 public class MidiEventQueue : IMidiEventCollector
 {
-   readonly Queue<RtMidiEvent> _midiEvents = new();
    readonly ILogger _logger;
+   readonly Queue<RtMidiEvent> _midiEvents = new();
 
    public MidiEventQueue(ILogger<MidiEventQueue> logger)
    {
@@ -16,17 +17,23 @@ public class MidiEventQueue : IMidiEventCollector
 
    public void Add(MidiMessageReceivedEventArgs eventArgs)
    {
-      _logger.LogDebug($"{eventArgs.Timestamp}: {eventArgs.Message}");
+      var noteLogMsg = eventArgs.Message is MidiMessageNote noteMsg
+         ? $" {noteMsg.Note.GetName()} v{noteMsg.Velocity}"
+         : "";
+      _logger.LogDebug(
+         $"{eventArgs.Timestamp}: {eventArgs.Message.Type}{noteLogMsg} Duration: {eventArgs.Timestamp.MidiTicks()}");
       var mEvent = new RtMidiEvent
       {
          MessageType = eventArgs.Message.Type,
          Time = eventArgs.Timestamp
       };
 
-      if (eventArgs.Message is MidiMessageNote messageNote)
+      if (eventArgs.Message is MidiMessageNoteBase messageNote)
       {
          mEvent.Note = messageNote.Note;
-         mEvent.Velocity = messageNote.Velocity;
+         if (messageNote is MidiMessageNote note)
+            mEvent.Velocity = note.Velocity;
+         else if (messageNote is MidiMessageNoteAfterTouch afterTouch) mEvent.Velocity = afterTouch.Pressure;
          mEvent.Channel = (uint)messageNote.Channel;
       }
 
@@ -38,11 +45,12 @@ public class MidiEventQueue : IMidiEventCollector
       _midiEvents.Clear();
    }
 
-   public RtMidiEvent[] Collect(bool clear = true)
+   public IEnumerable<RtMidiEvent> Collect(bool clear = true)
    {
-      var enumerable = _midiEvents.ToArray();
-      if (clear) Clear();
-      return enumerable;
+      Queue<RtMidiEvent> collected = new(_midiEvents);
+      if (clear)
+         Clear();
+      return collected;
    }
 
    public bool HasEvents()

@@ -14,11 +14,11 @@ namespace RtMidiRecorder.Midi;
 internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDisposable
 {
    readonly IHostApplicationLifetime _appLifetime;
+   readonly Timer _idleTimer;
    readonly ILogger _logger;
    readonly IMidiEventCollector _midiEventCollector;
    readonly IMidiEventsSerialiser _midiEventsSerialiser;
    readonly IOptions<MidiSettings> _midiSettings;
-   readonly Timer _idleTimer;
    int? _exitCode;
 
    MidiInputClient? _midiInputClient;
@@ -52,22 +52,6 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       return Task.CompletedTask;
    }
 
-   async Task TryConnectToMidiInput()
-   {
-      try
-      {
-         _logger.LogDebug(ConsoleMessages.Starting_MIDI_device_worker);
-         await InitiateMidiDeviceConnection();
-         _exitCode = 0;
-      }
-      catch (Exception ex)
-      {
-         _logger.LogError(ex, ConsoleMessages.Exception_initiating_MIDI_device);
-         _exitCode = 1;
-         _appLifetime.StopApplication();
-      }
-   }
-
    public Task InitiateMidiDeviceConnection()
    {
       var devicePort = RequestDevicePortInputLoop();
@@ -83,35 +67,6 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       _logger.LogInformation(string.Format(ConsoleMessages.Started_idle_timer_, _idleTimer.Interval));
 
       return Task.CompletedTask;
-   }
-
-   void OnIdleTimerElapsed(object? sender, ElapsedEventArgs args)
-   {
-      if (!_midiEventCollector.HasEvents()) return;
-      _idleTimer.Stop();
-      
-      var elapsedEvents = _midiEventCollector.Collect();
-      _logger.LogInformation(string.Format(ConsoleMessages.Collected__n__events_, elapsedEvents.Length));
-      
-      _midiEventsSerialiser.WriteEventsToFile($"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid", elapsedEvents);
-   }
-
-
-   uint RequestDevicePortInputLoop()
-   {
-      uint? devicePort = null;
-      while (devicePort == null)
-         try
-         {
-            devicePort = RequestDevicePort().Result;
-         }
-         catch (Exception e)
-         {
-            devicePort = null;
-            _logger.LogError(e, e.Message);
-         }
-
-      return devicePort.Value;
    }
 
    public Task<uint> RequestDevicePort()
@@ -142,10 +97,59 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       return Task.FromResult(devicePort.Value);
    }
 
+   public void Dispose()
+   {
+      _midiInputClient?.Close();
+      _midiInputClient?.Dispose();
+   }
+
+   async Task TryConnectToMidiInput()
+   {
+      try
+      {
+         _logger.LogDebug(ConsoleMessages.Starting_MIDI_device_worker);
+         await InitiateMidiDeviceConnection();
+         _exitCode = 0;
+      }
+      catch (Exception ex)
+      {
+         _logger.LogError(ex, ConsoleMessages.Exception_initiating_MIDI_device);
+         _exitCode = 1;
+         _appLifetime.StopApplication();
+      }
+   }
+
+   void OnIdleTimerElapsed(object? sender, ElapsedEventArgs args)
+   {
+      if (!_midiEventCollector.HasEvents()) return;
+      _idleTimer.Stop();
+
+      var elapsedEvents = _midiEventCollector.Collect();
+      _logger.LogInformation(string.Format(ConsoleMessages.Collected__n__events_, elapsedEvents.Count()));
+
+      _midiEventsSerialiser.WriteEventsToFile($"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid", elapsedEvents);
+   }
+
+
+   uint RequestDevicePortInputLoop()
+   {
+      uint? devicePort = null;
+      while (devicePort == null)
+         try
+         {
+            devicePort = _midiSettings.Value.DevicePort ?? RequestDevicePort().Result;
+         }
+         catch (Exception e)
+         {
+            devicePort = null;
+            _logger.LogError(e, e.Message);
+         }
+
+      return devicePort.Value;
+   }
+
    void OnMidiMessageReceived(object? midiClient, MidiMessageReceivedEventArgs eventArgs)
    {
-      _midiEventCollector.Add(eventArgs);
-
       if (_idleTimer is { Enabled: false })
       {
          _logger.LogInformation(ConsoleMessages.MIDI_events_detected);
@@ -157,11 +161,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
          _idleTimer.Stop();
          _idleTimer.Start();
       }
-   }
 
-   public void Dispose()
-   {
-      _midiInputClient?.Close();
-      _midiInputClient?.Dispose();
+      _midiEventCollector.Add(eventArgs);
    }
 }
