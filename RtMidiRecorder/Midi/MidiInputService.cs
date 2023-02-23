@@ -1,10 +1,13 @@
 using System.Timers;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.CommandLine;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RtMidi.Net;
 using RtMidi.Net.Enums;
 using RtMidi.Net.Events;
+using RtMidiRecorder.Midi.Configuration;
 using RtMidiRecorder.Midi.Data;
 using RtMidiRecorder.Midi.File;
 using Timer = System.Timers.Timer;
@@ -19,6 +22,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    readonly IMidiEventCollector _midiEventCollector;
    readonly IMidiEventsSerialiser _midiEventsSerialiser;
    readonly IOptions<MidiSettings> _midiSettings;
+   readonly ICliArgs _cliArgs;
    int? _exitCode;
 
    MidiInputClient? _midiInputClient;
@@ -27,14 +31,18 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       IHostApplicationLifetime appLifetime,
       IMidiEventCollector eventCollector,
       IMidiEventsSerialiser eventsSerialiser,
-      IOptions<MidiSettings> midiSettings)
+      IOptions<MidiSettings> midiSettings,
+      ICliArgs cliArgs)
    {
       _logger = logger;
       _appLifetime = appLifetime;
       _midiEventCollector = eventCollector;
       _midiEventsSerialiser = eventsSerialiser;
       _midiSettings = midiSettings;
+      _cliArgs = cliArgs;
       _idleTimer = new Timer(_midiSettings.Value.IdleTimeoutSeconds * 1000.0);
+      
+      
    }
 
    public Task StartAsync(CancellationToken cancellationToken)
@@ -137,7 +145,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       while (devicePort == null)
          try
          {
-            devicePort = _midiSettings.Value.DevicePort ?? RequestDevicePort().Result;
+            devicePort = _cliArgs.DevicePort ?? _midiSettings.Value.DevicePort ?? RequestDevicePort().Result;
          }
          catch (Exception e)
          {

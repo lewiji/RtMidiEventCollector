@@ -1,8 +1,11 @@
 ﻿using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PeanutButter.EasyArgs;
 using RtMidiRecorder.Midi;
+using RtMidiRecorder.Midi.Configuration;
 using RtMidiRecorder.Midi.Data;
 using RtMidiRecorder.Midi.File;
 
@@ -16,6 +19,7 @@ internal sealed class Program
    {
       try
       {
+         var opts = args.ParseTo<ICliArgs>();
          var builder = Host.CreateDefaultBuilder(args)
             .UseSystemd()
             .UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!)
@@ -25,10 +29,10 @@ internal sealed class Program
                   .AddHostedService<MidiInputService>()
                   .AddScoped<IMidiEventCollector, MidiEventQueue>()
                   .AddScoped<IMidiEventsSerialiser, MidiEventsSerialiser>()
+                  .AddSingleton(opts)
                   .AddLogging()
                   .AddOptions<MidiSettings>()
                   .Bind(context.Configuration.GetSection("Midi"));
-
 
                _logger = LoggerFactory.Create(config =>
                {

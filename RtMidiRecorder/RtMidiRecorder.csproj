@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="PeanutButter.EasyArgs" Version="3.0.100" />
         <PackageReference Include="RtMidi.Net" Version="1.0.0" />
         <None Include="lib\librtmidi.so" Link="\%(Filename)%(Extension)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
