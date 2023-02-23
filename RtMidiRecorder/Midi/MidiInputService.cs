@@ -1,5 +1,3 @@
-using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Timers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;

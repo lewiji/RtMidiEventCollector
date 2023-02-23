@@ -24,4 +24,23 @@ public class MidiSettings
     * *
     */
    public bool DrumMode { get; set; }
+
+   public void SetOption(string name, object value)
+   {
+      switch (name)
+      {
+         case "port":
+            DevicePort = (uint) value;
+            break;
+         case "idle-timeout":
+            IdleTimeoutSeconds = (uint) value;
+            break;
+         case "channel":
+            Channel = (uint) value;
+            break;
+         case "drum-mode":
+            DrumMode = (bool) value;
+            break;
+      }
+   }
 }

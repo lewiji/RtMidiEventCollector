@@ -72,4 +72,16 @@
     <data name="Rtmidi_native_library_not_found" xml:space="preserve">
         <value>System rtmidi native library not found. Try installing it from the OS package manager, or compiling from the C++ source.</value>
     </data>
+    <data name="Option_Device_port_for_MIDI_input_" xml:space="preserve">
+        <value>Device port for MIDI input.</value>
+    </data>
+    <data name="Option_Idle_timeout" xml:space="preserve">
+        <value>How long (in seconds) to wait for silence before outputting the collected MIDI events.</value>
+    </data>
+    <data name="Option_Channel_Override" xml:space="preserve">
+        <value>Notes in the MIDI output will have their channel overridden by this value if set.</value>
+    </data>
+    <data name="Option_Drum_mode" xml:space="preserve">
+        <value>Force the MIDI inputs to be treated as percussion events.</value>
+    </data>
 </root>

@@ -140,5 +140,29 @@ namespace RtMidiRecorder {
                 return ResourceManager.GetString("Rtmidi_native_library_not_found", resourceCulture);
             }
         }
+        
+        internal static string Option_Device_port_for_MIDI_input_ {
+            get {
+                return ResourceManager.GetString("Option_Device_port_for_MIDI_input_", resourceCulture);
+            }
+        }
+        
+        internal static string Option_Idle_timeout {
+            get {
+                return ResourceManager.GetString("Option_Idle_timeout", resourceCulture);
+            }
+        }
+        
+        internal static string Option_Channel_Override {
+            get {
+                return ResourceManager.GetString("Option_Channel_Override", resourceCulture);
+            }
+        }
+        
+        internal static string Option_Drum_mode {
+            get {
+                return ResourceManager.GetString("Option_Drum_mode", resourceCulture);
+            }
+        }
     }
 }
