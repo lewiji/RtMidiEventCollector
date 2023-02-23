@@ -134,5 +134,11 @@ namespace RtMidiRecorder {
                 return ResourceManager.GetString("Error_while_serializing_midi_events_", resourceCulture);
             }
         }
+        
+        internal static string Rtmidi_native_library_not_found {
+            get {
+                return ResourceManager.GetString("Rtmidi_native_library_not_found", resourceCulture);
+            }
+        }
     }
 }

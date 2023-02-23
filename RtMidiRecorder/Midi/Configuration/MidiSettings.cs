@@ -1,6 +1,6 @@
-namespace RtMidiRecorder.Midi.Data;
+namespace RtMidiRecorder.Midi.Configuration;
 
-internal sealed class MidiSettings
+public class MidiSettings
 {
    /**
     * <summary>Set this to automatically connect to this port on startup.</summary>

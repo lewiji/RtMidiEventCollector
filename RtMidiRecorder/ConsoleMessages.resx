@@ -69,4 +69,7 @@
     <data name="Error_while_serializing_midi_events_" xml:space="preserve">
         <value>Error while serializing midi events.</value>
     </data>
+    <data name="Rtmidi_native_library_not_found" xml:space="preserve">
+        <value>System rtmidi native library not found. Try installing it from the OS package manager, or compiling from the C++ source.</value>
+    </data>
 </root>

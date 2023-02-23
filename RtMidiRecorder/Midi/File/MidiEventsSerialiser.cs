@@ -1,8 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
 using Hearn.Midi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RtMidi.Net.Enums;
+using RtMidiRecorder.Midi.Configuration;
 using RtMidiRecorder.Midi.Data;
 using RtMidiRecorder.Midi.Extensions;
 
@@ -25,10 +25,9 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       _midiSettings = midiSettings;
    }
 
-   public void WriteEventsToFile(string path, IEnumerable<RtMidiEvent> events, int tempo = DefaultTempo)
+   public void WriteEventsToFile(string path, RtMidiEvent[] rtMidiEvents, int tempo = DefaultTempo)
    {
       USecPerMidiTick = CalculateUSecPerMidiTick(tempo);
-      var rtMidiEvents = events as RtMidiEvent[] ?? events.ToArray();
       try
       {
          _logger.LogInformation(string.Format(ConsoleMessages.Saving_midi_to_path, path));
@@ -70,12 +69,12 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       {
          case MidiMessageType.NoteOn:
          {
-            long noteLength = 0;
-            // Drums on MIDI channel 10 (9 here, zero indexed) may send 2 NoteOn messages with 2nd message's velocity
-            // set to 0 being equivalent to NoteOff messages, other channels may use held notes/polyphony
-            noteLength = noteEvent.Channel == 9 
-               ? DrumsGetNoteLengthAndDiscardZeroVelNoteOn(noteEventQueue, noteEvent) 
-               : FindPairedNoteOff(noteOffEvents, noteEvent.Note.GetByteRepresentation(), noteEventQueue, out pairedNoteOffEvent);
+            var noteLength =
+                  // Drums on MIDI channel 10 (9 here, zero indexed) may send 2 NoteOn messages with 2nd message's velocity
+                  // set to 0 being equivalent to NoteOff messages, other channels may use held notes/polyphony
+                  noteEvent.Channel == 9 
+                  ? DrumsGetNoteLengthAndDiscardZeroVelNoteOn(noteEventQueue) 
+                  : FindPairedNoteOff(noteOffEvents, noteEvent.Note.GetByteRepresentation(), noteEventQueue, out pairedNoteOffEvent);
 
             _logger.LogDebug($"NoteOn {noteEvent.Note.GetName()}: {(channel == 9 ? DrumNoteDuration : noteLength)} midi ticks");
             
@@ -183,7 +182,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       }
    }
 
-   long DrumsGetNoteLengthAndDiscardZeroVelNoteOn(Queue<RtMidiEvent> noteEventQueue, RtMidiEvent noteEvent)
+   long DrumsGetNoteLengthAndDiscardZeroVelNoteOn(Queue<RtMidiEvent> noteEventQueue)
    {
       long duration = 0;
       // discard the second NoteOn message if velocity is 0, it's equiv to NoteOff

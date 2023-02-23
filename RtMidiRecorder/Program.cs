@@ -1,10 +1,13 @@
-﻿using System.Reflection;
+﻿using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Hosting;
+using System.CommandLine.Parsing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using PeanutButter.EasyArgs;
 using RtMidiRecorder.Midi;
+using RtMidiRecorder.Midi.Configuration;
 using RtMidiRecorder.Midi.Data;
 using RtMidiRecorder.Midi.File;
 
@@ -18,33 +21,43 @@ internal sealed class Program
    {
       try
       {
-         var builder = Host.CreateDefaultBuilder(args)
-            .UseSystemd()
-            //.UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!)
-            .ConfigureServices((context, collection) =>
-            {
-               collection
-                  .AddHostedService<MidiInputService>()
-                  .AddScoped<IMidiEventCollector, MidiEventQueue>()
-                  .AddScoped<IMidiEventsSerialiser, MidiEventsSerialiser>()
-                  .AddLogging()
-                  .AddOptions<MidiSettings>()
-                  .Bind(context.Configuration.GetSection("Midi"));
+         var cmd = BuildCommandLine()
+            .UseHost(_ => Host.CreateDefaultBuilder(args), builder => {
+               builder.UseSystemd()
+                  .UseContentRoot(AppContext.BaseDirectory)
+                  .ConfigureServices((context, collection) => {
+                     collection.AddHostedService<MidiInputService>()
+                        .AddScoped<IMidiEventCollector, MidiEventQueue>()
+                        .AddScoped<IMidiEventsSerialiser, MidiEventsSerialiser>()
+                        .AddLogging()
+                        .AddOptions<MidiSettings>()
+                        .Bind(context.Configuration.GetSection("Midi"));
 
-               _logger = LoggerFactory.Create(config =>
-               {
-                  config
-                     .AddConsole()
-                     .AddConfiguration(context.Configuration.GetSection("Logging"));
-               }).CreateLogger("Program");
-            });
+                     _logger = LoggerFactory.Create(config => {
+                           config.AddConsole().AddConfiguration(context.Configuration.GetSection("Logging"));
+                        })
+                        .CreateLogger("Program");
+                  });
+            })
+            .UseDefaults()
+            .Build();
 
-
-         await builder.RunConsoleAsync();
+         await cmd.InvokeAsync(args);
       }
       catch (TaskCanceledException)
       {
          _logger?.LogInformation(ConsoleMessages.Task_canceled_shutting_down);
       }
+   }
+
+   static CommandLineBuilder BuildCommandLine()
+   {
+      var devicePortOption = new Option<uint?>(new[] {"--port", "-p"}, () => null, "Device port for MIDI input");
+
+      RootCommand rootCommand = new($@"RtMidiRecorder is an automated MIDI device capture service/daemon.") {
+         devicePortOption
+      };
+
+      return new CommandLineBuilder(rootCommand);
    }
 }
