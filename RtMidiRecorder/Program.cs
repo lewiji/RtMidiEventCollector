@@ -18,7 +18,7 @@ internal sealed class Program
       {
          var builder = Host.CreateDefaultBuilder(args)
             .UseSystemd()
-            .UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!)
+            //.UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!)
             .ConfigureServices((context, collection) =>
             {
                collection

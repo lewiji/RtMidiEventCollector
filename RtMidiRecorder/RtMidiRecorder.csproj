@@ -14,9 +14,6 @@
 
     <ItemGroup>
         <PackageReference Include="RtMidi.Net" Version="1.0.0" />
-        <None Include="lib\librtmidi.so" Link="\%(Filename)%(Extension)">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
     <ItemGroup>
