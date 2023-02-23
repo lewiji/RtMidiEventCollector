@@ -22,7 +22,7 @@ internal sealed class Program
          var opts = args.ParseTo<ICliArgs>();
          var builder = Host.CreateDefaultBuilder(args)
             .UseSystemd()
-            .UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!)
+            //.UseContentRoot(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!)
             .ConfigureServices((context, collection) =>
             {
                collection
