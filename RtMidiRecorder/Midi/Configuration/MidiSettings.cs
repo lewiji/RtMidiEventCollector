@@ -24,6 +24,13 @@ public class MidiSettings
     * *
     */
    public bool DrumMode { get; set; }
+   
+   /**
+    * <summary>Path to output .mid files to. If not set, they will be saved to the current working directory.</summary>
+    * *
+    */
+   public string? FilePath { get; set; }
+
 
    public void SetOption(string name, object value)
    {
@@ -40,6 +47,9 @@ public class MidiSettings
             break;
          case "drum-mode":
             DrumMode = (bool) value;
+            break;
+         case "filepath":
+            FilePath = (string) value;
             break;
       }
    }

@@ -13,7 +13,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
    const int DefaultTempo = 120;
    const int Ppq = 96; // hardcoded in Hearn.Midi
    const int USecPerMinute = 60000000;
-   const long DrumNoteDuration = (long)MidiStreamWriter.NoteDurations.SixtyFourthNote;
+   const long DrumNoteDuration = 1;
    public static long USecPerMidiTick = CalculateUSecPerMidiTick(DefaultTempo);
    
    readonly ILogger _logger;
@@ -72,7 +72,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
             var noteLength =
                   // Drums on MIDI channel 10 (9 here, zero indexed) may send 2 NoteOn messages with 2nd message's velocity
                   // set to 0 being equivalent to NoteOff messages, other channels may use held notes/polyphony
-                  noteEvent.Channel == 9 
+                  channel == 9 
                   ? DrumsGetNoteLengthAndDiscardZeroVelNoteOn(noteEventQueue) 
                   : FindPairedNoteOff(noteOffEvents, noteEvent.Note.GetByteRepresentation(), noteEventQueue, out pairedNoteOffEvent);
 
@@ -82,7 +82,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
                (byte)channel,
                (MidiConstants.MidiNoteNumbers)noteEvent.Note.GetByteRepresentation(),
                (byte)noteEvent.Velocity,
-               noteEvent.Channel == 9 ? DrumNoteDuration : noteLength);
+               channel == 9 ? DrumNoteDuration : noteLength);
             
             // Ticks (note release & timing between notes) have several cases to handle differently
             ProcessOrDeferTicksForNoteOn(noteEvent, noteLength, midiStreamWriter, noteEventQueue, pairedNoteOffEvent,

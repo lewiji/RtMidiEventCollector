@@ -29,25 +29,14 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 			IHostApplicationLifetime appLifetime,
 			IMidiEventCollector eventCollector,
 			IMidiEventsSerialiser eventsSerialiser,
-			IOptions<MidiSettings> midiSettings,
-			IConfiguration configuration)
+			IOptions<MidiSettings> midiSettings)
 	{
 		_logger = logger;
 		_appLifetime = appLifetime;
 		_midiEventCollector = eventCollector;
 		_midiEventsSerialiser = eventsSerialiser;
 		_midiSettings = midiSettings;
-		ParseCliArgs(configuration);
 		_idleTimer = new Timer(_midiSettings.Value.IdleTimeoutSeconds * 1000.0);
-	}
-
-	void ParseCliArgs(IConfiguration configuration)
-	{
-		if (configuration.GetValue<uint?>("port") is { } portArg)
-		{
-			_logger.LogInformation($"Using port {portArg} from args");
-			_midiSettings.Value.DevicePort = portArg;
-		}
 	}
 
 	public Task StartAsync(CancellationToken cancellationToken)

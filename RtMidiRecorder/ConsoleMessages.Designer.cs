@@ -164,5 +164,11 @@ namespace RtMidiRecorder {
                 return ResourceManager.GetString("Option_Drum_mode", resourceCulture);
             }
         }
+        
+        internal static string FilePathOption_Path_to_output {
+            get {
+                return ResourceManager.GetString("FilePathOption_Path_to_output", resourceCulture);
+            }
+        }
     }
 }
