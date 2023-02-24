@@ -68,7 +68,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
             var noteLength =
                   // Drums on MIDI channel 10 (9 here, zero indexed) may send 2 NoteOn messages with 2nd message's velocity
                   // set to 0 being equivalent to NoteOff messages, other channels may use held notes/polyphony
-                  noteEvent.Channel == 9 
+                  channel == 9 
                   ? DrumsGetNoteLengthAndDiscardZeroVelNoteOn(noteEventQueue) 
                   : FindPairedNoteOff(noteOffEvents, noteEvent.Note.GetByteRepresentation(), noteEventQueue, out pairedNoteOffEvent);
 
@@ -78,7 +78,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
                (byte)channel,
                (MidiConstants.MidiNoteNumbers)noteEvent.Note.GetByteRepresentation(),
                (byte)noteEvent.Velocity,
-               noteEvent.Channel == 9 ? MidiSettings.DrumNoteDuration : noteLength);
+               channel == 9 ? MidiSettings.DrumNoteDuration : noteLength);
             
             // Ticks (note release & timing between notes) have several cases to handle differently
             ProcessOrDeferTicksForNoteOn(noteEvent, noteLength, midiStreamWriter, noteEventQueue, pairedNoteOffEvent,

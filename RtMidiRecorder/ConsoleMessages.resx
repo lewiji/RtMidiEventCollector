@@ -84,4 +84,7 @@
     <data name="Option_Drum_mode" xml:space="preserve">
         <value>Force the MIDI inputs to be treated as percussion events.</value>
     </data>
+    <data name="FilePathOption_Path_to_output" xml:space="preserve">
+        <value>Path to output .mid files to. If not set, they will be saved to the current working directory.</value>
+    </data>
 </root>

@@ -16,11 +16,15 @@ namespace RtMidiRecorder;
 internal sealed class Program
 {
    static ILogger? _logger;
-   static readonly Option<uint?> DevicePortOption = new(new[] {"--port", "-p"}, ConsoleMessages.Option_Device_port_for_MIDI_input_);
-   static readonly Option<uint?> IdleTimeoutOption = new(new[] {"--idle-timeout", "-i"}, ConsoleMessages.Option_Idle_timeout);
-   static readonly Option<uint?> ChannelOption = new(new[] {"--channel", "-c"}, ConsoleMessages.Option_Channel_Override);
-   static readonly Option<bool?> DrumModeOption = new(new[] {"--drum-mode", "-d"}, ConsoleMessages.Option_Drum_mode);
-
+   
+   static readonly Option[] Options = {
+      new Option<uint?>(new[] {"--port", "-p"}, ConsoleMessages.Option_Device_port_for_MIDI_input_), 
+      new Option<uint?>(new[] {"--idle-timeout", "-i"}, ConsoleMessages.Option_Idle_timeout), 
+      new Option<uint?>(new[] {"--channel", "-c"}, ConsoleMessages.Option_Channel_Override),
+      new Option<bool?>(new[] {"--drum-mode", "-d"}, ConsoleMessages.Option_Drum_mode), 
+      new Option<bool?>(new[] {"--filepath", "-f"}, ConsoleMessages.FilePathOption_Path_to_output)
+   };
+   
    static async Task Main(string[] args)
    {
       try
@@ -55,9 +59,8 @@ internal sealed class Program
 
    static void ConfigureCommandLineOptions(MidiSettings opts, BindingContext bindingContext, ParseResult parseResult)
    {
-      var options = new Option[] {DevicePortOption, IdleTimeoutOption, ChannelOption, DrumModeOption};
 
-      foreach (var option in options)
+      foreach (var option in Options)
       {
          if (parseResult.GetValueForOption(option) is not { } result) continue;
          
@@ -68,12 +71,12 @@ internal sealed class Program
 
    static CommandLineBuilder BuildCommandLine()
    {
-      RootCommand rootCommand = new($@"RtMidiRecorder is an automated MIDI device capture service/daemon.") {
-         DevicePortOption,
-         IdleTimeoutOption,
-         ChannelOption,
-         DrumModeOption
-      };
+      RootCommand rootCommand = new($@"RtMidiRecorder is an automated MIDI device capture service/daemon.");
+      
+      foreach (var option in Options)
+      {
+         rootCommand.AddOption(option);
+      }
 
       return new CommandLineBuilder(rootCommand);
    }

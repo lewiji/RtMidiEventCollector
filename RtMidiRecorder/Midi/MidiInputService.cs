@@ -34,8 +34,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 			IHostApplicationLifetime appLifetime,
 			IMidiEventCollector eventCollector,
 			IMidiEventsSerialiser eventsSerialiser,
-			IOptions<MidiSettings> midiSettings,
-			IConfiguration configuration)
+			IOptions<MidiSettings> midiSettings)
 	{
 		_logger = logger;
 		_appLifetime = appLifetime;
