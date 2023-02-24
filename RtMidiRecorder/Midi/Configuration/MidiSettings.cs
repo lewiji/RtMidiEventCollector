@@ -1,7 +1,15 @@
+using Hearn.Midi;
+
 namespace RtMidiRecorder.Midi.Configuration;
 
 public class MidiSettings
 {
+   
+   public const int DefaultTempo = 120;
+   public const int PpqDevice = 24; // hardcoded in Hearn.Midi
+   public const int PpqSerialised = 96; // hardcoded in Hearn.Midi
+   public const int USecPerMinute = 60000000;
+   public const long DrumNoteDuration = (long)MidiStreamWriter.NoteDurations.SixtyFourthNote;
    /**
     * <summary>Set this to automatically connect to this port on startup.</summary>
     */

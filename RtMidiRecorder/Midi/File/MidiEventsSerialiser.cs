@@ -10,11 +10,7 @@ namespace RtMidiRecorder.Midi.File;
 
 internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
 {
-   const int DefaultTempo = 120;
-   const int Ppq = 96; // hardcoded in Hearn.Midi
-   const int USecPerMinute = 60000000;
-   const long DrumNoteDuration = (long)MidiStreamWriter.NoteDurations.SixtyFourthNote;
-   public static long USecPerMidiTick = CalculateUSecPerMidiTick(DefaultTempo);
+   public static long USecPerMidiTick = CalculateUSecPerMidiTick(MidiSettings.DefaultTempo);
    
    readonly ILogger _logger;
    readonly IOptions<MidiSettings> _midiSettings;
@@ -25,7 +21,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       _midiSettings = midiSettings;
    }
 
-   public void WriteEventsToFile(string path, RtMidiEvent[] rtMidiEvents, int tempo = DefaultTempo)
+   public void WriteEventsToFile(string path, RtMidiEvent[] rtMidiEvents, int tempo = MidiSettings.DefaultTempo)
    {
       USecPerMidiTick = CalculateUSecPerMidiTick(tempo);
       try
@@ -76,13 +72,13 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
                   ? DrumsGetNoteLengthAndDiscardZeroVelNoteOn(noteEventQueue) 
                   : FindPairedNoteOff(noteOffEvents, noteEvent.Note.GetByteRepresentation(), noteEventQueue, out pairedNoteOffEvent);
 
-            _logger.LogDebug($"NoteOn {noteEvent.Note.GetName()}: {(channel == 9 ? DrumNoteDuration : noteLength)} midi ticks");
+            _logger.LogDebug($"NoteOn {noteEvent.Note.GetName()}: {(channel == 9 ? MidiSettings.DrumNoteDuration : noteLength)} midi ticks");
             
             midiStreamWriter.WriteNote(
                (byte)channel,
                (MidiConstants.MidiNoteNumbers)noteEvent.Note.GetByteRepresentation(),
                (byte)noteEvent.Velocity,
-               noteEvent.Channel == 9 ? DrumNoteDuration : noteLength);
+               noteEvent.Channel == 9 ? MidiSettings.DrumNoteDuration : noteLength);
             
             // Ticks (note release & timing between notes) have several cases to handle differently
             ProcessOrDeferTicksForNoteOn(noteEvent, noteLength, midiStreamWriter, noteEventQueue, pairedNoteOffEvent,
@@ -230,7 +226,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
 
    static long CalculateUSecPerMidiTick(int tempo)
    {
-      var uSecPerBeat = USecPerMinute / tempo;
-      return uSecPerBeat / Ppq;
+      var uSecPerBeat = MidiSettings.USecPerMinute / tempo;
+      return uSecPerBeat / MidiSettings.PpqSerialised;
    }
 }
