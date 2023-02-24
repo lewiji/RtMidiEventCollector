@@ -145,6 +145,8 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
       _midiEventsSerialiser.WriteEventsToFile(Path.Combine(_midiSettings.Value.FilePath ?? "", $"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid"),
          rtMidiEvents, _currentTempo);
+      
+      _midiInputClient!.IgnoreTimeMessages = false;
    }
 
    uint RequestDevicePortInputLoop()
@@ -185,6 +187,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       {
          _logger.LogInformation(ConsoleMessages.MIDI_events_detected);
          _idleTimer.Start();
+         _midiInputClient!.IgnoreTimeMessages = true;
       } else
       {
          // Always restart timer if a new event is received and it's Enabled
