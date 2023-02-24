@@ -199,14 +199,11 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    {
       var ticks = eventArgs.Timestamp.Ticks + _ticksSinceLastClock;
       _ticksSinceLastClock = 0;
+      
+      if (ticks < 1000) return;
+
       _clockEvents.Enqueue(ticks);
-
-      if (ticks < 10000)
-      {
-         _logger.LogDebug($"Suspicious timing clock received: {eventArgs.Timestamp.Ticks}");
-      }
-
-
+      
       if (_clockEvents.Count < 24) return;
 
       var sum = 0.0;
@@ -223,7 +220,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
          lastClock = currClock;
       }
 
-      var avg = sum / (MidiSettings.PpqDevice - 0.9);
+      var avg = sum / (MidiSettings.PpqDevice - 0.99);
 
       if (avg <= 0) return;
 
@@ -231,7 +228,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
       _tempoBuffer.Enqueue(bpm);
 
-      if (_tempoBuffer.Count != 3) return;
+      if (_tempoBuffer.Count != 4) return;
       var tempoSum = 0.0;
 
       while (_tempoBuffer.Count > 0)
@@ -239,7 +236,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
          tempoSum += _tempoBuffer.Dequeue();
       }
 
-      var bufferAvg = (int) (tempoSum / 3);
+      var bufferAvg = (int) (tempoSum / 4);
       if (bufferAvg == _currentTempo) return;
       _currentTempo = bufferAvg;
       _logger.LogInformation($"Current tempo: {bufferAvg}");
