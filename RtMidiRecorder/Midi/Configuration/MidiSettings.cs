@@ -4,12 +4,11 @@ namespace RtMidiRecorder.Midi.Configuration;
 
 public class MidiSettings
 {
-   
    public const int DefaultTempo = 120;
    public const int PpqDevice = 24; // hardcoded in Hearn.Midi
    public const int PpqSerialised = 96; // hardcoded in Hearn.Midi
    public const int USecPerMinute = 60000000;
-   public const long DrumNoteDuration = (long)MidiStreamWriter.NoteDurations.SixtyFourthNote;
+   public const long DrumNoteDuration = (long) MidiStreamWriter.NoteDurations.SixtyFourthNote;
    /**
     * <summary>Set this to automatically connect to this port on startup.</summary>
     */
@@ -32,13 +31,12 @@ public class MidiSettings
     * *
     */
    public bool DrumMode { get; set; }
-   
+
    /**
     * <summary>Path to output .mid files to. If not set, they will be saved to the current working directory.</summary>
     * *
     */
    public string? FilePath { get; set; }
-
 
    public void SetOption(string name, object value)
    {

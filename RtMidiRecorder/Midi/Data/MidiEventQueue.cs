@@ -17,13 +17,10 @@ public class MidiEventQueue : IMidiEventCollector
 
    public void Add(MidiMessageReceivedEventArgs eventArgs)
    {
-      var noteLogMsg = eventArgs.Message is MidiMessageNote noteMsg
-         ? $" {noteMsg.Note.GetName()} v{noteMsg.Velocity}"
-         : "";
-      _logger.LogDebug(
-         $"{eventArgs.Timestamp}: {eventArgs.Message.Type}{noteLogMsg} Duration: {eventArgs.Timestamp.MidiTicks()}");
-      var mEvent = new RtMidiEvent
-      {
+      var noteLogMsg = eventArgs.Message is MidiMessageNote noteMsg ? $" {noteMsg.Note.GetName()} v{noteMsg.Velocity}" : "";
+      _logger.LogDebug($"{eventArgs.Timestamp}: {eventArgs.Message.Type}{noteLogMsg} Duration: {eventArgs.Timestamp.MidiTicks()}");
+
+      var mEvent = new RtMidiEvent {
          MessageType = eventArgs.Message.Type,
          Time = eventArgs.Timestamp
       };
@@ -31,10 +28,11 @@ public class MidiEventQueue : IMidiEventCollector
       if (eventArgs.Message is MidiMessageNoteBase messageNote)
       {
          mEvent.Note = messageNote.Note;
+
          if (messageNote is MidiMessageNote note)
             mEvent.Velocity = note.Velocity;
          else if (messageNote is MidiMessageNoteAfterTouch afterTouch) mEvent.Velocity = afterTouch.Pressure;
-         mEvent.Channel = (uint)messageNote.Channel;
+         mEvent.Channel = (uint) messageNote.Channel;
       }
 
       _midiEvents.Enqueue(mEvent);
@@ -48,6 +46,7 @@ public class MidiEventQueue : IMidiEventCollector
    public IEnumerable<RtMidiEvent> Collect(bool clear = true)
    {
       Queue<RtMidiEvent> collected = new(_midiEvents);
+
       if (clear)
          Clear();
       return collected;
