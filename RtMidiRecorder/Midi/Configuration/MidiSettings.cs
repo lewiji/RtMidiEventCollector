@@ -13,6 +13,11 @@ public class MidiSettings
     * <summary>Set this to automatically connect to this port on startup.</summary>
     */
    public uint? DevicePort { get; set; }
+   
+   /**
+    * <summary>Set this to automatically connect to this named device.</summary>
+    */
+   public string? DeviceName { get; set; }
 
    /**
     * <summary>How long to wait for silence before outputting the collected MIDI events.</summary>

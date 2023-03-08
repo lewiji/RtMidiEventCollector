@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Timers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -23,7 +22,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    readonly IOptions<MidiSettings> _midiSettings;
    readonly Queue<long> _clockEvents = new();
    readonly Queue<double> _tempoBuffer = new();
-   long _ticksSinceLastClock = 0;
+   long _ticksSinceLastClock;
    int _currentTempo = 120;
    int? _exitCode;
 
@@ -86,13 +85,14 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    public Task<uint> RequestDevicePort()
    {
       var devices = MidiManager.GetAvailableDevices();
-      Console.WriteLine(ConsoleMessages.Heading_Midi_DeviceList);
+      _logger.LogInformation(ConsoleMessages.Heading_Midi_DeviceList);
 
       foreach (var midiDeviceInfo in devices.Where(midiDeviceInfo => midiDeviceInfo.Type == MidiDeviceType.Input))
-         Console.WriteLine($@"{midiDeviceInfo.Port}: {midiDeviceInfo.Name}");
+         _logger.LogInformation($"{midiDeviceInfo.Port}: {midiDeviceInfo.Name}");
 
-      Console.WriteLine(@"------------------------ ");
-      Console.WriteLine(ConsoleMessages.Prompt_DevicePort_Entry);
+
+      _logger.LogInformation("------------------------");
+      _logger.LogInformation(ConsoleMessages.Prompt_DevicePort_Entry);
       var portInput = Console.ReadLine();
 
       if (portInput == null) throw new Exception(ConsoleMessages.DevicePort_Invalid_null);
@@ -114,6 +114,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
    public void Dispose()
    {
+      _logger.LogInformation("MidiInputService being disposed.");
       _midiInputClient?.Close();
       _midiInputClient?.Dispose();
    }
@@ -145,8 +146,15 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
       _midiEventsSerialiser.WriteEventsToFile(Path.Combine(_midiSettings.Value.FilePath ?? "", $"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid"),
          rtMidiEvents, _currentTempo);
-      
-      _midiInputClient!.IgnoreTimeMessages = false;
+
+      if (_midiInputClient != null)
+      {
+         _midiInputClient.IgnoreTimeMessages = false;
+      }
+      else
+      {
+         _logger.LogError("_midiInputClient is null");
+      }
    }
 
    uint RequestDevicePortInputLoop()
@@ -187,7 +195,16 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       {
          _logger.LogInformation(ConsoleMessages.MIDI_events_detected);
          _idleTimer.Start();
-         _midiInputClient!.IgnoreTimeMessages = true;
+         if (_midiInputClient != null)
+         {
+            _midiInputClient.IgnoreTimeMessages = true;
+            _clockEvents.Clear();
+            _tempoBuffer.Clear();
+         }
+         else
+         {
+            _logger.LogError("_midiInputClient is null");
+         }
       } else
       {
          // Always restart timer if a new event is received and it's Enabled
@@ -223,11 +240,11 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
          lastClock = currClock;
       }
 
-      var avg = sum / (MidiSettings.PpqDevice - 0.99);
+      var avg = sum / (MidiSettings.PpqDevice - 0.95);
 
       if (avg <= 0) return;
 
-      var bpm = (MidiSettings.USecPerMinute * 10.0) / (double) MidiSettings.PpqDevice / avg;
+      var bpm = (MidiSettings.USecPerMinute * 10.0) / MidiSettings.PpqDevice / avg;
 
       _tempoBuffer.Enqueue(bpm);
 
@@ -240,7 +257,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       }
 
       var bufferAvg = (int) (tempoSum / 4);
-      if (bufferAvg == _currentTempo) return;
+      if (bufferAvg == _currentTempo || bufferAvg == 0) return;
       _currentTempo = bufferAvg;
       _logger.LogInformation($"Current tempo: {bufferAvg}");
    }

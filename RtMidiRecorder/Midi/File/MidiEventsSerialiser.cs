@@ -32,8 +32,8 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
          WriteMidiMetadata(tempo, midiStreamWriter);
 
          var noteEventQueue = new Queue<RtMidiEvent>(rtMidiEvents.Where(e =>
-            e.MessageType is MidiMessageType.NoteOn or MidiMessageType.NoteOff));
-         var noteOffEvents = rtMidiEvents.Where(e => e.MessageType == MidiMessageType.NoteOff).ToList();
+            e.MessageType is (byte)MidiMessageType.NoteOn or (byte)MidiMessageType.NoteOff));
+         var noteOffEvents = rtMidiEvents.Where(e => e.MessageType == (byte)MidiMessageType.NoteOff).ToList();
          var deferredNoteDurationStorage = new Dictionary<RtMidiEvent, long>();
 
          while (noteEventQueue.Count > 0)
@@ -66,18 +66,17 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
 
       switch (noteEvent.MessageType)
       {
-         case MidiMessageType.NoteOn: {
+         case (byte)MidiMessageType.NoteOn: {
             var noteLength =
                // Drums on MIDI channel 10 (9 here, zero indexed) may send 2 NoteOn messages with 2nd message's velocity
                // set to 0 being equivalent to NoteOff messages, other channels may use held notes/polyphony
                channel == 9
                   ? DrumsGetNoteLengthAndDiscardZeroVelNoteOn(noteEventQueue)
-                  : FindPairedNoteOff(noteOffEvents, noteEvent.Note.GetByteRepresentation(), noteEventQueue, out pairedNoteOffEvent);
+                  : FindPairedNoteOff(noteOffEvents, noteEvent.Note, noteEventQueue, out pairedNoteOffEvent);
 
-            _logger.LogDebug(
-               $"NoteOn {noteEvent.Note.GetName()}: {(channel == 9 ? MidiSettings.DrumNoteDuration : noteLength)} midi ticks");
+            _logger.LogDebug($"NoteOn {noteEvent.Note}: {(channel == 9 ? MidiSettings.DrumNoteDuration : noteLength)} midi ticks");
 
-            midiStreamWriter.WriteNote((byte) channel, (MidiConstants.MidiNoteNumbers) noteEvent.Note.GetByteRepresentation(),
+            midiStreamWriter.WriteNote((byte) channel, (MidiConstants.MidiNoteNumbers) noteEvent.Note,
                (byte) noteEvent.Velocity, channel == 9 ? MidiSettings.DrumNoteDuration : noteLength);
 
             // Ticks (note release & timing between notes) have several cases to handle differently
@@ -85,7 +84,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
                deferredNoteDurationStorage);
             break;
          }
-         case MidiMessageType.NoteOff: {
+         case (byte)MidiMessageType.NoteOff: {
             long tickDuration = 0;
 
             if (deferredNoteDurationStorage.TryGetValue(noteEvent, out var heldLength))
@@ -97,13 +96,13 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
             {
                tickDuration = noteEvent.Time.MidiTicks();
 
-               if (noteEventQueue.TryPeek(out var nextNote) && nextNote.MessageType == MidiMessageType.NoteOn)
+               if (noteEventQueue.TryPeek(out var nextNote) && nextNote.MessageType == (byte)MidiMessageType.NoteOn)
                {
                   tickDuration += nextNote.Time.MidiTicks();
                }
             }
 
-            _logger.LogDebug($"Note off: {noteEvent.Note.GetName()}: {tickDuration} midi ticks");
+            _logger.LogDebug($"Note off: {noteEvent.Note}: {tickDuration} midi ticks");
             midiStreamWriter.Tick(tickDuration);
             break;
          }
@@ -137,7 +136,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       if (noteEvent.Channel == 9)
       {
          if (noteLength <= 0) return;
-         _logger.LogDebug($"Tick (drums) {noteEvent.Note.GetName()}: {noteLength} midi ticks");
+         _logger.LogDebug($"Tick (drums) {noteEvent.Note}: {noteLength} midi ticks");
          midiStreamWriter.Tick(noteLength);
       }
       // If the next event in the queue is this note's paired NoteOff, process it immediately
@@ -152,7 +151,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
          }
 
          midiStreamWriter.Tick(tickLength);
-         _logger.LogDebug($"Tick (immediate) {pairedNoteOffEvent.Value.Note.GetName()}: {noteLength} midi ticks");
+         _logger.LogDebug($"Tick (immediate) {pairedNoteOffEvent.Value.Note}: {noteLength} midi ticks");
       }
       // Tick for the current note should be deferred until later, so store the duration length until it's dequeued
       else
@@ -160,10 +159,10 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
          var deferredTickLength = noteLength;
 
          // With 2 NoteOns in a row, a Tick may be required for timing without ending the note
-         if (noteEventQueue.TryPeek(out var nextNote) && nextNote.MessageType == MidiMessageType.NoteOn)
+         if (noteEventQueue.TryPeek(out var nextNote) && nextNote.MessageType == (byte)MidiMessageType.NoteOn)
          {
             midiStreamWriter.Tick(nextNote.Time.MidiTicks());
-            _logger.LogDebug($"Tick (drums, immediate) {nextNote.Note.GetName()}: {noteLength} midi ticks");
+            _logger.LogDebug($"Tick (drums, immediate) {nextNote.Note}: {noteLength} midi ticks");
          }
 
          // there should be a paired note off for every note on, but it's not guaranteed due to early exit or weirdness
@@ -179,7 +178,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
          }
 
          deferredNoteDurationStorage.Add(pairedNoteOffEvent.Value, deferredTickLength);
-         _logger.LogDebug($"Deferring Tick: {pairedNoteOffEvent.Value.Note.GetName()}: {deferredTickLength} ticks");
+         _logger.LogDebug($"Deferring Tick: {pairedNoteOffEvent.Value.Note}: {deferredTickLength} ticks");
       }
    }
 
@@ -188,15 +187,15 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       long duration = 0;
 
       // discard the second NoteOn message if velocity is 0, it's equiv to NoteOff
-      if (noteEventQueue.TryPeek(out var zeroVelNoteOn) && zeroVelNoteOn is {MessageType: MidiMessageType.NoteOn, Velocity: 0})
+      if (noteEventQueue.TryPeek(out var zeroVelNoteOn) && zeroVelNoteOn is {MessageType: (byte)MidiMessageType.NoteOn, Velocity: 0})
       {
          noteEventQueue.Dequeue();
-         _logger.LogDebug($"Discarding 0 velocity NoteOn (drums): {zeroVelNoteOn.Note.GetName()}");
+         _logger.LogDebug($"Discarding 0 velocity NoteOn (drums): {zeroVelNoteOn.Note}");
       }
 
       if (noteEventQueue.TryPeek(out var nextNote))
       {
-         if (nextNote is {MessageType: MidiMessageType.NoteOn, Velocity: > 0})
+         if (nextNote is {MessageType: (byte)MidiMessageType.NoteOn, Velocity: > 0})
             duration = nextNote.Time.MidiTicks();
       } else
       {
@@ -213,7 +212,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       out RtMidiEvent? pairedNoteOffEvent)
    {
       pairedNoteOffEvent = noteOffEvents.FirstOrDefault(e =>
-         e.MessageType == MidiMessageType.NoteOff && e.Note.GetByteRepresentation() == currNote);
+         e.MessageType == (byte)MidiMessageType.NoteOff && e.Note == currNote);
 
       if (pairedNoteOffEvent.Equals(default(RtMidiEvent))) return 0;
 

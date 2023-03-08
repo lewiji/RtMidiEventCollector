@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using RtMidi.Net;
 using RtMidi.Net.Events;
@@ -17,17 +18,14 @@ public class MidiEventQueue : IMidiEventCollector
 
    public void Add(MidiMessageReceivedEventArgs eventArgs)
    {
-      var noteLogMsg = eventArgs.Message is MidiMessageNote noteMsg ? $" {noteMsg.Note.GetName()} v{noteMsg.Velocity}" : "";
-      _logger.LogDebug($"{eventArgs.Timestamp}: {eventArgs.Message.Type}{noteLogMsg} Duration: {eventArgs.Timestamp.MidiTicks()}");
-
       var mEvent = new RtMidiEvent {
-         MessageType = eventArgs.Message.Type,
+         MessageType = (byte)eventArgs.Message.Type,
          Time = eventArgs.Timestamp
       };
 
       if (eventArgs.Message is MidiMessageNoteBase messageNote)
       {
-         mEvent.Note = messageNote.Note;
+         mEvent.Note = messageNote.Note.GetByteRepresentation();
 
          if (messageNote is MidiMessageNote note)
             mEvent.Velocity = note.Velocity;

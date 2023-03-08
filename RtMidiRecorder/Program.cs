@@ -31,7 +31,13 @@ internal sealed class Program
       {
          var cmd = BuildCommandLine()
             .UseHost(_ => Host.CreateDefaultBuilder(args),
-               builder => { builder.UseSystemd().UseContentRoot(AppContext.BaseDirectory).ConfigureServices(ConfigureHostServices); })
+               builder =>
+               {
+                  builder
+                     .UseSystemd()
+                     .UseContentRoot(AppContext.BaseDirectory)
+                     .ConfigureServices(ConfigureHostServices);
+               })
             .UseDefaults()
             .Build();
 

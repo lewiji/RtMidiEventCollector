@@ -1,0 +1,3 @@
+[submodule "RtMidi.Net"]
+	path = RtMidi.Net
+	url = https://github.com/lewiji/RtMidi.Net.git
