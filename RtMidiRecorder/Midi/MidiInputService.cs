@@ -23,6 +23,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    readonly Queue<long> _clockEvents = new();
    readonly Queue<double> _tempoBuffer = new();
    long _ticksSinceLastClock;
+   bool _resetClock;
    int _currentTempo = 120;
    int? _exitCode;
 
@@ -200,6 +201,8 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
             _midiInputClient.IgnoreTimeMessages = true;
             _clockEvents.Clear();
             _tempoBuffer.Clear();
+            _ticksSinceLastClock = 0;
+            _resetClock = true;
          }
          else
          {
@@ -219,6 +222,12 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    {
       var ticks = eventArgs.Timestamp.Ticks + _ticksSinceLastClock;
       _ticksSinceLastClock = 0;
+
+      if (_resetClock)
+      {
+         ticks = 0;
+         _resetClock = false;
+      }
       
       if (ticks < 1000) return;
 

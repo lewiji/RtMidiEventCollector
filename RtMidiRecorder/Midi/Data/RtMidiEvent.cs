@@ -5,7 +5,7 @@ namespace RtMidiRecorder.Midi.Data;
 
 public struct RtMidiEvent
 {
-   public TimeSpan Time;
+   public long Time;
    public byte MessageType;
    public byte Note;
    public uint Velocity;

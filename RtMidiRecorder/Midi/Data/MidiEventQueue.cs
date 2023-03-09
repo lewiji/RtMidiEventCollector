@@ -20,7 +20,7 @@ public class MidiEventQueue : IMidiEventCollector
    {
       var mEvent = new RtMidiEvent {
          MessageType = (byte)eventArgs.Message.Type,
-         Time = eventArgs.Timestamp
+         Time = eventArgs.Timestamp.MidiTicks()
       };
 
       if (eventArgs.Message is MidiMessageNoteBase messageNote)
