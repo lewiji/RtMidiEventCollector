@@ -5,9 +5,9 @@ namespace RtMidiRecorder.Midi.Configuration;
 public class MidiSettings
 {
    public const double DefaultTempo = 120.0;
-   public const int PpqDevice = 24; // hardcoded in Hearn.Midi
-   public const int PpqSerialised = 96; // hardcoded in Hearn.Midi
-   public const int USecPerMinute = 60000000;
+   public const double PpqDevice = 24; // hardcoded in Hearn.Midi
+   public const double PpqSerialised = 96; // hardcoded in Hearn.Midi
+   public const double USecPerMinute = 60000000;
    public const long DrumNoteDuration = (long)MidiStreamWriter.NoteDurations.SixtyFourthNote;
 
    /**
