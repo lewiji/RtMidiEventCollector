@@ -170,5 +170,11 @@ namespace RtMidiRecorder {
                 return ResourceManager.GetString("FilePathOption_Path_to_output", resourceCulture);
             }
         }
+        
+        internal static string Option_MIDI_clock_weight {
+            get {
+                return ResourceManager.GetString("Option_MIDI_clock_weight", resourceCulture);
+            }
+        }
     }
 }

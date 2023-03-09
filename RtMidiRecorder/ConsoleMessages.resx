@@ -87,4 +87,7 @@
     <data name="FilePathOption_Path_to_output" xml:space="preserve">
         <value>Path to output .mid files to. If not set, they will be saved to the current working directory.</value>
     </data>
+    <data name="Option_MIDI_clock_weight" xml:space="preserve">
+        <value>If your MIDI clock isn't reporting accurately, increase this weight to lower the averaged tempo.</value>
+    </data>
 </root>

@@ -21,6 +21,13 @@ public class MidiSettings
    public string? DeviceName { get; set; }
 
    /**
+    * <summary>Some input device clocks are more accurate than others; this value is a weight subtracted from the divisor
+    * when averaging a full bar's timing clocks. If your clock isn't reporting accurately, increase this to pull down
+    * the calculated clock rate.</summary>
+    */
+   public double ClockAveragingWeight { get; set; } = 0.05;
+
+   /**
     * <summary>How long to wait for silence before outputting the collected MIDI events.</summary>
     * *
     */
@@ -62,6 +69,9 @@ public class MidiSettings
             break;
          case "filepath":
             FilePath = (string)value;
+            break;
+         case "clock-weight":
+            ClockAveragingWeight = (double)value;
             break;
       }
    }

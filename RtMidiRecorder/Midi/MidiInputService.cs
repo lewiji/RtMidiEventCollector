@@ -22,12 +22,12 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    readonly IMidiEventCollector _midiEventCollector;
    readonly IMidiEventsSerialiser _midiEventsSerialiser;
    readonly IOptions<MidiSettings> _midiSettings;
-   double _currentTempo = 120.0;
-   int? _exitCode;
-
+   
    MidiInputClient? _midiInputClient;
-   bool _resetClock;
+   double _currentTempo = 120.0;
    double _usSinceLastClock;
+   int? _exitCode;
+   bool _resetClock;
 
    public MidiInputService(ILogger<MidiInputService> logger,
       IHostApplicationLifetime appLifetime,
@@ -79,6 +79,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
       _idleTimer.Elapsed += OnIdleTimerElapsed;
       _logger.LogInformation(string.Format(ConsoleMessages.Started_idle_timer_, _idleTimer.Interval));
+      _logger.LogDebug($"MIDI clock averaging weight: {_midiSettings.Value.ClockAveragingWeight}");
 
       return Task.CompletedTask;
    }
@@ -231,6 +232,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
          return;
 
       var clockBpm = CalculateClockBpm();
+      
       if (clockBpm < 0.5 || Math.Abs(clockBpm - _currentTempo) < 0.499 )
          return;
 
@@ -242,19 +244,22 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
    double CalculateClockBpm()
    {
       var sum = 0.0;
-      double? lastClock = null;
+      double firstClock = _clockEvents.Dequeue();
+      double? prevClock = null;
 
       while (_clockEvents.Count > 0)
       {
-         var currClock = _clockEvents.Dequeue();
-
-         if (lastClock != null)
-            sum += (lastClock.Value + currClock) / 2.0;
-
-         lastClock = currClock;
+         var currClock = prevClock ?? firstClock;
+         if (_clockEvents.TryDequeue(out var nextClock))
+         {
+            sum += (nextClock + currClock) / 2.0;
+            prevClock = nextClock;
+         }
+         else
+            sum += (currClock + firstClock) / 2.0;
       }
 
-      var avgUSecs = sum / ((MidiSettings.PpqDevice * 4) - 1);
+      var avgUSecs = sum / ((MidiSettings.PpqDevice * 4) - _midiSettings.Value.ClockAveragingWeight);
       var clockBpm = MidiSettings.USecPerMinute / MidiSettings.PpqDevice / avgUSecs;
       return clockBpm;
    }

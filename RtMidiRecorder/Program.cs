@@ -23,7 +23,8 @@ internal sealed class Program
       new Option<uint?>(new[] { "--idle-timeout", "-i" }, ConsoleMessages.Option_Idle_timeout),
       new Option<uint?>(new[] { "--channel", "-c" }, ConsoleMessages.Option_Channel_Override),
       new Option<bool?>(new[] { "--drum-mode", "-d" }, ConsoleMessages.Option_Drum_mode),
-      new Option<string?>(new[] { "--filepath", "-f" }, ConsoleMessages.FilePathOption_Path_to_output)
+      new Option<string?>(new[] { "--filepath", "-f" }, ConsoleMessages.FilePathOption_Path_to_output),
+      new Option<double?>(new [] {"--clock-weight", "-w"}, ConsoleMessages.Option_MIDI_clock_weight)
    };
 
    static async Task Main(string[] args)
