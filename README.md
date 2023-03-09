@@ -33,6 +33,7 @@ Options:
   -c, --channel <channel>            Notes in the MIDI output will have their channel overridden by this value if set.
   -d, --drum-mode                    Force the MIDI inputs to be treated as percussion events.
   -f, --filepath <filepath>          Path to output .mid files to. If not set, they will be saved to the current working directory.
+  -w, --clock-weight <clock-weight>  If your MIDI clock isn't reporting accurately, increase this weight to lower the averaged tempo.
   --version                          Show version information
   -?, -h, --help                     Show help and usage information
   ```
@@ -46,7 +47,8 @@ Options:
      "IdleTimeoutSeconds": 3,
      "Channel": 9,
      "DrumMode": false,
-     "FilePath": "/home/user/somepath"
+     "FilePath": "/home/user/somepath",
+     "ClockAveragingWeight": 0.05
    }                                                                                                                                                                                                                                                                     
  }    
  ```
