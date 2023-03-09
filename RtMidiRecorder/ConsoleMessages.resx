@@ -1,90 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <root>
-  <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata"
-              id="root"
-              xmlns="">
-    <xsd:element name="root" msdata:IsDataSet="true">
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata"
+                id="root"
+                xmlns="">
+        <xsd:element name="root" msdata:IsDataSet="true">
 
-    </xsd:element>
-  </xsd:schema>
-  <resheader name="resmimetype">
-    <value>text/microsoft-resx</value>
-  </resheader>
-  <resheader name="version">
-    <value>1.3</value>
-  </resheader>
-  <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
-      PublicKeyToken=b77a5c561934e089
-    </value>
-  </resheader>
-  <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
-      PublicKeyToken=b77a5c561934e089
-    </value>
-  </resheader>
-  <data name="DevicePort_Invalid_null" xml:space="preserve">
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="DevicePort_Invalid_null" xml:space="preserve">
         <value>Invalid port input: null</value>
     </data>
-  <data name="DevicePort_Conversion_Failed" xml:space="preserve">
+    <data name="DevicePort_Conversion_Failed" xml:space="preserve">
         <value>Couldn't convert port input to uint: {0}. Exception: {1}</value>
     </data>
-  <data name="Heading_Midi_DeviceList" xml:space="preserve">
+    <data name="Heading_Midi_DeviceList" xml:space="preserve">
         <value>Connected MIDI input devices:</value>
     </data>
-  <data name="Prompt_DevicePort_Entry" xml:space="preserve">
+    <data name="Prompt_DevicePort_Entry" xml:space="preserve">
         <value>Enter device port number: </value>
     </data>
-  <data name="Task_canceled_shutting_down" xml:space="preserve">
+    <data name="Task_canceled_shutting_down" xml:space="preserve">
         <value>Task canceled, shutting down.</value>
     </data>
-  <data name="Exiting_with_return_code" xml:space="preserve">
+    <data name="Exiting_with_return_code" xml:space="preserve">
         <value>Exiting with return code: {0}</value>
     </data>
-  <data name="Starting_MIDI_device_worker" xml:space="preserve">
+    <data name="Starting_MIDI_device_worker" xml:space="preserve">
         <value>Starting MIDI device worker...</value>
     </data>
-  <data name="Connected_to_Midi_Input_" xml:space="preserve">
+    <data name="Connected_to_Midi_Input_" xml:space="preserve">
         <value>Connected to Midi Input: {0}.</value>
     </data>
-  <data name="Started_idle_timer_" xml:space="preserve">
+    <data name="Started_idle_timer_" xml:space="preserve">
         <value>Started idle detection timer with interval: {0}.</value>
     </data>
-  <data name="Collected__n__events_" xml:space="preserve">
+    <data name="Collected__n__events_" xml:space="preserve">
         <value>Collected {0} events.</value>
     </data>
-  <data name="MIDI_events_detected" xml:space="preserve">
+    <data name="MIDI_events_detected" xml:space="preserve">
         <value>New MIDI events detected during idle, restarting idle timeout...</value>
     </data>
-  <data name="Exception_initiating_MIDI_device" xml:space="preserve">
+    <data name="Exception_initiating_MIDI_device" xml:space="preserve">
         <value>Unhandled exception when initiating MIDI device connection, stopping service...</value>
     </data>
-  <data name="Saving_midi_to_path" xml:space="preserve">
+    <data name="Saving_midi_to_path" xml:space="preserve">
         <value>Saving midi to {0}...</value>
     </data>
-  <data name="Saved_midi_" xml:space="preserve">
+    <data name="Saved_midi_" xml:space="preserve">
         <value>Saved midi.</value>
     </data>
-  <data name="Error_while_serializing_midi_events_" xml:space="preserve">
+    <data name="Error_while_serializing_midi_events_" xml:space="preserve">
         <value>Error while serializing midi events.</value>
     </data>
-  <data name="Rtmidi_native_library_not_found" xml:space="preserve">
+    <data name="Rtmidi_native_library_not_found" xml:space="preserve">
         <value>System rtmidi native library not found. Try installing it from the OS package manager, or compiling from the C++ source.</value>
     </data>
-  <data name="Option_Device_port_for_MIDI_input_" xml:space="preserve">
+    <data name="Option_Device_port_for_MIDI_input_" xml:space="preserve">
         <value>Device port for MIDI input.</value>
     </data>
-  <data name="Option_Idle_timeout" xml:space="preserve">
+    <data name="Option_Idle_timeout" xml:space="preserve">
         <value>How long (in seconds) to wait for silence before outputting the collected MIDI events.</value>
     </data>
-  <data name="Option_Channel_Override" xml:space="preserve">
+    <data name="Option_Channel_Override" xml:space="preserve">
         <value>Notes in the MIDI output will have their channel overridden by this value if set.</value>
     </data>
-  <data name="Option_Drum_mode" xml:space="preserve">
+    <data name="Option_Drum_mode" xml:space="preserve">
         <value>Force the MIDI inputs to be treated as percussion events.</value>
     </data>
-  <data name="FilePathOption_Path_to_output" xml:space="preserve">
+    <data name="FilePathOption_Path_to_output" xml:space="preserve">
         <value>Path to output .mid files to. If not set, they will be saved to the current working directory.</value>
     </data>
 </root>

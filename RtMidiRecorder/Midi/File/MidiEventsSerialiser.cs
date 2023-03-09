@@ -20,7 +20,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       _midiSettings = midiSettings;
    }
 
-   public void WriteEventsToFile(string path, RtMidiEvent[] rtMidiEvents, int tempo = MidiSettings.DefaultTempo)
+   public void WriteEventsToFile(string path, RtMidiEvent[] rtMidiEvents, double tempo = MidiSettings.DefaultTempo)
    {
       USecPerMidiTick = CalculateUSecPerMidiTick(tempo);
 
@@ -36,17 +36,13 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
          var deferredNoteDurationStorage = new Dictionary<RtMidiEvent, long>();
 
          while (noteEventQueue.Count > 0)
-         {
             ProcessNoteEvent(noteEventQueue, noteOffEvents, midiStreamWriter, deferredNoteDurationStorage);
-         }
 
          midiStreamWriter.WriteEndTrack();
          _logger.LogInformation(ConsoleMessages.Saved_midi_);
 
          if (deferredNoteDurationStorage.Count > 0)
-         {
             _logger.LogWarning("Held notes dictionary contained entries after MIDI serialisation.");
-         }
       }
       catch (Exception e)
       {
@@ -65,37 +61,38 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
 
       switch (noteEvent.MessageType)
       {
-         case (byte)MidiMessageType.NoteOn: {
+         case (byte)MidiMessageType.NoteOn:
+         {
             var noteLength =
                // Drums on MIDI channel 10 (9 here, zero indexed) may send 2 NoteOn messages with 2nd message's velocity
                // set to 0 being equivalent to NoteOff messages, other channels may use held notes/polyphony
                channel == 9
                   ? DrumsGetNoteLengthAndDiscardZeroVelNoteOn(noteEventQueue)
                   : FindPairedNoteOff(noteOffEvents, noteEvent.Note, noteEventQueue, out pairedNoteOffEvent);
-            
-            midiStreamWriter.WriteNote((byte) channel, (MidiConstants.MidiNoteNumbers) noteEvent.Note,
-               (byte) noteEvent.Velocity, channel == 9 ? MidiSettings.DrumNoteDuration : noteLength);
+
+            midiStreamWriter.WriteNote((byte)channel, (MidiConstants.MidiNoteNumbers)noteEvent.Note,
+               (byte)noteEvent.Velocity, channel == 9 ? MidiSettings.DrumNoteDuration : noteLength);
 
             // Ticks (note release & timing between notes) have several cases to handle differently
             ProcessOrDeferTicksForNoteOn(noteEvent, noteLength, midiStreamWriter, noteEventQueue, pairedNoteOffEvent,
                deferredNoteDurationStorage);
             break;
          }
-         case (byte)MidiMessageType.NoteOff: {
+         case (byte)MidiMessageType.NoteOff:
+         {
             long tickDuration = 0;
 
             if (deferredNoteDurationStorage.TryGetValue(noteEvent, out var heldLength))
             {
                tickDuration += heldLength;
                deferredNoteDurationStorage.Remove(noteEvent);
-            } else
+            }
+            else
             {
                tickDuration = noteEvent.Time;
 
                if (noteEventQueue.TryPeek(out var nextNote) && nextNote.MessageType == (byte)MidiMessageType.NoteOn)
-               {
                   tickDuration += nextNote.Time;
-               }
             }
 
             midiStreamWriter.Tick(tickDuration);
@@ -107,7 +104,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       }
    }
 
-   void WriteMidiMetadata(int tempo, MidiStreamWriter midiStreamWriter)
+   void WriteMidiMetadata(double tempo, MidiStreamWriter midiStreamWriter)
    {
       midiStreamWriter.WriteHeader(MidiConstants.Formats.MultiSimultaneousTracks, 2)
          .WriteStartTrack()
@@ -140,9 +137,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
          var tickLength = noteLength;
 
          if (noteEventQueue.TryPeek(out var nextNote)) // && nextNote.MessageType == MidiMessageType.NoteOn)
-         {
             tickLength += nextNote.Time;
-         }
 
          midiStreamWriter.Tick(tickLength);
       }
@@ -153,9 +148,7 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
 
          // With 2 NoteOns in a row, a Tick may be required for timing without ending the note
          if (noteEventQueue.TryPeek(out var nextNote) && nextNote.MessageType == (byte)MidiMessageType.NoteOn)
-         {
             midiStreamWriter.Tick(nextNote.Time);
-         }
 
          // there should be a paired note off for every note on, but it's not guaranteed due to early exit or weirdness
          if (pairedNoteOffEvent == null) return;
@@ -178,19 +171,18 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       long duration = 0;
 
       // discard the second NoteOn message if velocity is 0, it's equiv to NoteOff
-      if (noteEventQueue.TryPeek(out var zeroVelNoteOn) && zeroVelNoteOn is {MessageType: (byte)MidiMessageType.NoteOn, Velocity: 0})
-      {
-         noteEventQueue.Dequeue();
-      }
+      if (noteEventQueue.TryPeek(out var zeroVelNoteOn) && zeroVelNoteOn is
+             { MessageType: (byte)MidiMessageType.NoteOn, Velocity: 0 }) noteEventQueue.Dequeue();
 
       if (noteEventQueue.TryPeek(out var nextNote))
       {
-         if (nextNote is {MessageType: (byte)MidiMessageType.NoteOn, Velocity: > 0})
+         if (nextNote is { MessageType: (byte)MidiMessageType.NoteOn, Velocity: > 0 })
             duration = nextNote.Time;
-      } else
+      }
+      else
       {
          // last note
-         duration = (long) MidiStreamWriter.NoteDurations.WholeNote;
+         duration = (long)MidiStreamWriter.NoteDurations.WholeNote;
       }
 
       return duration;
@@ -219,9 +211,9 @@ internal sealed class MidiEventsSerialiser : IMidiEventsSerialiser
       return noteLength;
    }
 
-   static long CalculateUSecPerMidiTick(int tempo)
+   static long CalculateUSecPerMidiTick(double tempo)
    {
       var uSecPerBeat = MidiSettings.USecPerMinute / tempo;
-      return uSecPerBeat / MidiSettings.PpqSerialised;
+      return (long)Math.Round(uSecPerBeat / MidiSettings.PpqSerialised, MidpointRounding.AwayFromZero);
    }
 }

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using RtMidi.Net;
 using RtMidi.Net.Events;
 using RtMidiRecorder.Midi.Extensions;
@@ -11,7 +10,8 @@ public class MidiEventQueue : IMidiEventCollector
 
    public void Add(MidiMessageReceivedEventArgs eventArgs)
    {
-      var mEvent = new RtMidiEvent {
+      var mEvent = new RtMidiEvent
+      {
          MessageType = (byte)eventArgs.Message.Type,
          Time = eventArgs.Timestamp.MidiTicks()
       };
@@ -23,7 +23,7 @@ public class MidiEventQueue : IMidiEventCollector
          if (messageNote is MidiMessageNote note)
             mEvent.Velocity = note.Velocity;
          else if (messageNote is MidiMessageNoteAfterTouch afterTouch) mEvent.Velocity = afterTouch.Pressure;
-         mEvent.Channel = (uint) messageNote.Channel;
+         mEvent.Channel = (uint)messageNote.Channel;
       }
 
       _midiEvents.Enqueue(mEvent);

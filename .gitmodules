@@ -1,3 +1,7 @@
 [submodule "RtMidi.Net"]
 	path = RtMidi.Net
 	url = https://github.com/lewiji/RtMidi.Net.git
+[submodule "Hearn.Midi"]
+	path = Hearn.Midi
+	url = https://github.com/lewiji/Hearn.Midi.git
+	branch = decimal-tempo

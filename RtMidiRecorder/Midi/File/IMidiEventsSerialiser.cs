@@ -4,5 +4,5 @@ namespace RtMidiRecorder.Midi.File;
 
 public interface IMidiEventsSerialiser
 {
-   void WriteEventsToFile(string path, RtMidiEvent[] events, int tempo = 120);
+   void WriteEventsToFile(string path, RtMidiEvent[] events, double tempo = 120.0);
 }

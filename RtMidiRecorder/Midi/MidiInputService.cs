@@ -15,19 +15,19 @@ namespace RtMidiRecorder.Midi;
 internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDisposable
 {
    readonly IHostApplicationLifetime _appLifetime;
+   readonly Queue<long> _clockEvents = new();
    readonly Timer _idleTimer;
    readonly ILogger _logger;
    readonly IMidiEventCollector _midiEventCollector;
    readonly IMidiEventsSerialiser _midiEventsSerialiser;
    readonly IOptions<MidiSettings> _midiSettings;
-   readonly Queue<long> _clockEvents = new();
    readonly Queue<double> _tempoBuffer = new();
-   long _ticksSinceLastClock;
-   bool _resetClock;
-   int _currentTempo = 120;
+   double _currentTempo = 120.0;
    int? _exitCode;
 
    MidiInputClient? _midiInputClient;
+   bool _resetClock;
+   long _ticksSinceLastClock;
 
    public MidiInputService(ILogger<MidiInputService> logger,
       IHostApplicationLifetime appLifetime,
@@ -145,17 +145,14 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       var rtMidiEvents = elapsedEvents as RtMidiEvent[] ?? elapsedEvents.ToArray();
       _logger.LogInformation(string.Format(ConsoleMessages.Collected__n__events_, rtMidiEvents.Count()));
 
-      _midiEventsSerialiser.WriteEventsToFile(Path.Combine(_midiSettings.Value.FilePath ?? "", $"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid"),
+      _midiEventsSerialiser.WriteEventsToFile(
+         Path.Combine(_midiSettings.Value.FilePath ?? "", $"{DateTime.Now:yyyy-dd-M--HH-mm-ss}.mid"),
          rtMidiEvents, _currentTempo);
 
       if (_midiInputClient != null)
-      {
          _midiInputClient.IgnoreTimeMessages = false;
-      }
       else
-      {
          _logger.LogError("_midiInputClient is null");
-      }
    }
 
    uint RequestDevicePortInputLoop()
@@ -176,6 +173,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
                _logger.LogError(ConsoleMessages.Rtmidi_native_library_not_found);
                throw;
             }
+
             _logger.LogError(e, e.Message);
          }
 
@@ -192,23 +190,11 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
       _ticksSinceLastClock += eventArgs.Timestamp.Ticks;
 
-      if (_idleTimer is {Enabled: false})
+      if (_idleTimer is { Enabled: false })
       {
-         _logger.LogInformation(ConsoleMessages.MIDI_events_detected);
-         _idleTimer.Start();
-         if (_midiInputClient != null)
-         {
-            _midiInputClient.IgnoreTimeMessages = true;
-            _clockEvents.Clear();
-            _tempoBuffer.Clear();
-            _ticksSinceLastClock = 0;
-            _resetClock = true;
-         }
-         else
-         {
-            _logger.LogError("_midiInputClient is null");
-         }
-      } else
+         StartIdleTimerAndRecording();
+      }
+      else
       {
          // Always restart timer if a new event is received and it's Enabled
          _idleTimer.Stop();
@@ -218,23 +204,41 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
       _midiEventCollector.Add(eventArgs);
    }
 
+   void StartIdleTimerAndRecording()
+   {
+      _logger.LogInformation(ConsoleMessages.MIDI_events_detected);
+
+      if (_midiInputClient != null)
+         _midiInputClient.IgnoreTimeMessages = true;
+
+      _idleTimer.Start();
+      _clockEvents.Clear();
+      _tempoBuffer.Clear();
+      _resetClock = true;
+      _ticksSinceLastClock = 0;
+   }
+
    void ProcessMidiClocks(MidiMessageReceivedEventArgs eventArgs)
    {
-      var ticks = eventArgs.Timestamp.Ticks + _ticksSinceLastClock;
-      _ticksSinceLastClock = 0;
-
-      if (_resetClock)
-      {
-         ticks = 0;
-         _resetClock = false;
-      }
-      
-      if (ticks < 1000) return;
+      var ticks = ProcessTicksAndClocks(eventArgs.Timestamp.Ticks + _ticksSinceLastClock);
+      if (ticks < 1000)
+         return;
 
       _clockEvents.Enqueue(ticks);
-      
-      if (_clockEvents.Count < 24) return;
+      if (_clockEvents.Count < MidiSettings.PpqDevice)
+         return;
 
+      var clockBpm = CalculateClockBpm();
+      if (clockBpm <= 0)
+         return;
+
+      var tempoBufferAvg = _tempoBuffer.Count > 0 ? _tempoBuffer.Average() : 0;
+      EnqueueClockBpm(clockBpm, tempoBufferAvg);
+      CalculateTempoFromBuffer(tempoBufferAvg);
+   }
+
+   double CalculateClockBpm()
+   {
       var sum = 0.0;
       double? lastClock = null;
 
@@ -243,31 +247,61 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
          var currClock = _clockEvents.Dequeue();
 
          if (lastClock != null)
-         {
             sum += (lastClock.Value + currClock) / 2.0;
-         }
+
          lastClock = currClock;
       }
 
-      var avg = sum / (MidiSettings.PpqDevice - 0.95);
+      var clockBpm = sum / (MidiSettings.PpqDevice - 1.0);
+      return clockBpm;
+   }
 
-      if (avg <= 0) return;
+   long ProcessTicksAndClocks(long ticks)
+   {
+      _ticksSinceLastClock = 0;
 
-      var bpm = (MidiSettings.USecPerMinute * 10.0) / MidiSettings.PpqDevice / avg;
+      if (!_resetClock)
+         return ticks;
+
+      _resetClock = false;
+      ticks = 0;
+      return ticks;
+   }
+
+   void EnqueueClockBpm(double avg, double tempoBufferAvg)
+   {
+      var bpm = MidiSettings.USecPerMinute * 10.0 / MidiSettings.PpqDevice / avg;
+
+      if (_tempoBuffer.Count > 0 && Math.Abs(bpm - tempoBufferAvg) > tempoBufferAvg / 180.0)
+         // Discard buffered tempos if changing too much (higher tempos have a bigger change threshold than lower tempos)
+         _tempoBuffer.Clear();
 
       _tempoBuffer.Enqueue(bpm);
+   }
 
-      if (_tempoBuffer.Count != 4) return;
+   void CalculateTempoFromBuffer(double tempoBufferAvg)
+   {
+      if (_tempoBuffer.Count < 2)
+         return;
+
+      var tempoBufferLength = Math.Min(15, Math.Max(tempoBufferAvg / 50.0, 2));
+
+      if (_tempoBuffer.Count < tempoBufferLength)
+         return;
+
+      var tempoBufferSize = _tempoBuffer.Count;
       var tempoSum = 0.0;
 
-      while (_tempoBuffer.Count > 0)
-      {
-         tempoSum += _tempoBuffer.Dequeue();
-      }
+      while (_tempoBuffer.Count > 0) tempoSum += _tempoBuffer.Dequeue();
 
-      var bufferAvg = (int) (tempoSum / 4);
-      if (bufferAvg == _currentTempo || bufferAvg == 0) return;
-      _currentTempo = bufferAvg;
-      _logger.LogInformation($"Current tempo: {bufferAvg}");
+      var bufferAvg = tempoSum / tempoBufferSize;
+
+      // Discard if average is too close to the current tempo
+      if (Math.Abs(bufferAvg - _currentTempo) < 0.35 || bufferAvg < 0.5)
+         return;
+
+      // Round to nearest .5
+      _currentTempo = Math.Round(bufferAvg * 2, MidpointRounding.AwayFromZero) / 2;
+      _logger.LogInformation($"Current tempo: {_currentTempo}");
    }
 }

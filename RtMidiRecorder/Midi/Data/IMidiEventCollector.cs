@@ -1,4 +1,5 @@
 using RtMidi.Net.Events;
+
 namespace RtMidiRecorder.Midi.Data;
 
 public interface IMidiEventCollector

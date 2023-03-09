@@ -4,16 +4,17 @@ namespace RtMidiRecorder.Midi.Configuration;
 
 public class MidiSettings
 {
-   public const int DefaultTempo = 120;
+   public const double DefaultTempo = 120.0;
    public const int PpqDevice = 24; // hardcoded in Hearn.Midi
    public const int PpqSerialised = 96; // hardcoded in Hearn.Midi
    public const int USecPerMinute = 60000000;
-   public const long DrumNoteDuration = (long) MidiStreamWriter.NoteDurations.SixtyFourthNote;
+   public const long DrumNoteDuration = (long)MidiStreamWriter.NoteDurations.SixtyFourthNote;
+
    /**
     * <summary>Set this to automatically connect to this port on startup.</summary>
     */
    public uint? DevicePort { get; set; }
-   
+
    /**
     * <summary>Set this to automatically connect to this named device.</summary>
     */
@@ -48,19 +49,19 @@ public class MidiSettings
       switch (name)
       {
          case "port":
-            DevicePort = (uint) value;
+            DevicePort = (uint)value;
             break;
          case "idle-timeout":
-            IdleTimeoutSeconds = (uint) value;
+            IdleTimeoutSeconds = (uint)value;
             break;
          case "channel":
-            Channel = (uint) value;
+            Channel = (uint)value;
             break;
          case "drum-mode":
-            DrumMode = (bool) value;
+            DrumMode = (bool)value;
             break;
          case "filepath":
-            FilePath = (string) value;
+            FilePath = (string)value;
             break;
       }
    }

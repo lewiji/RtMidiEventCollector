@@ -6,6 +6,6 @@ public static class TimeSpanExtensions
 {
    public static long MidiTicks(this TimeSpan timeSpan)
    {
-      return (long) (timeSpan.TotalMicroseconds / MidiEventsSerialiser.USecPerMidiTick);
+      return (long)(timeSpan.TotalMicroseconds / MidiEventsSerialiser.USecPerMidiTick);
    }
 }

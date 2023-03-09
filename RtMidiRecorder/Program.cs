@@ -17,12 +17,13 @@ internal sealed class Program
 {
    static ILogger? _logger;
 
-   static readonly Option[] Options = {
-      new Option<uint?>(new[] {"--port", "-p"}, ConsoleMessages.Option_Device_port_for_MIDI_input_),
-      new Option<uint?>(new[] {"--idle-timeout", "-i"}, ConsoleMessages.Option_Idle_timeout),
-      new Option<uint?>(new[] {"--channel", "-c"}, ConsoleMessages.Option_Channel_Override),
-      new Option<bool?>(new[] {"--drum-mode", "-d"}, ConsoleMessages.Option_Drum_mode),
-      new Option<string?>(new[] {"--filepath", "-f"}, ConsoleMessages.FilePathOption_Path_to_output)
+   static readonly Option[] Options =
+   {
+      new Option<uint?>(new[] { "--port", "-p" }, ConsoleMessages.Option_Device_port_for_MIDI_input_),
+      new Option<uint?>(new[] { "--idle-timeout", "-i" }, ConsoleMessages.Option_Idle_timeout),
+      new Option<uint?>(new[] { "--channel", "-c" }, ConsoleMessages.Option_Channel_Override),
+      new Option<bool?>(new[] { "--drum-mode", "-d" }, ConsoleMessages.Option_Drum_mode),
+      new Option<string?>(new[] { "--filepath", "-f" }, ConsoleMessages.FilePathOption_Path_to_output)
    };
 
    static async Task Main(string[] args)
@@ -59,7 +60,10 @@ internal sealed class Program
          .Bind(context.Configuration.GetSection("Midi"))
          .Configure<BindingContext, ParseResult>(ConfigureCommandLineOptions);
 
-      _logger = LoggerFactory.Create(config => { config.AddConsole().AddConfiguration(context.Configuration.GetSection("Logging")); })
+      _logger = LoggerFactory.Create(config =>
+         {
+            config.AddConsole().AddConfiguration(context.Configuration.GetSection("Logging"));
+         })
          .CreateLogger("Program");
    }
 
@@ -76,12 +80,9 @@ internal sealed class Program
 
    static CommandLineBuilder BuildCommandLine()
    {
-      RootCommand rootCommand = new($@"RtMidiRecorder is an automated MIDI device capture service/daemon.");
+      RootCommand rootCommand = new(@"RtMidiRecorder is an automated MIDI device capture service/daemon.");
 
-      foreach (var option in Options)
-      {
-         rootCommand.AddOption(option);
-      }
+      foreach (var option in Options) rootCommand.AddOption(option);
 
       return new CommandLineBuilder(rootCommand);
    }
