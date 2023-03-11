@@ -45,6 +45,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
    public Task StartAsync(CancellationToken cancellationToken)
    {
+      Program.SystemdNotifyReady();
       _logger.LogInformation($"RtMidiRecorder {GetType().Assembly.GetName().Version!.ToString()}");
       Task.Run(TryConnectToMidiInput, cancellationToken);
       return Task.Delay(-1, cancellationToken);
@@ -52,6 +53,7 @@ internal sealed class MidiInputService : IHostedService, IMidiDeviceWorker, IDis
 
    public Task StopAsync(CancellationToken cancellationToken)
    {
+      Program.SystemdNotifyStopping();
       _logger.LogInformation(string.Format(ConsoleMessages.Exiting_with_return_code, _exitCode));
       Environment.ExitCode = _exitCode.GetValueOrDefault(-1);
       Dispose();

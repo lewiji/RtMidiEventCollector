@@ -1,0 +1,11 @@
+[Unit] 
+Description=RtMidiRecorder automatic MIDI input serialiser
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/RtMidiRecorder
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

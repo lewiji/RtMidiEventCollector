@@ -5,6 +5,7 @@ using System.CommandLine.Hosting;
 using System.CommandLine.Parsing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Systemd;
 using Microsoft.Extensions.Logging;
 using RtMidiRecorder.Midi;
 using RtMidiRecorder.Midi.Configuration;
@@ -16,6 +17,7 @@ namespace RtMidiRecorder;
 internal sealed class Program
 {
    static ILogger? _logger;
+   static SystemdNotifier? _systemdNotifier;
 
    static readonly Option[] Options =
    {
@@ -29,6 +31,9 @@ internal sealed class Program
 
    static async Task Main(string[] args)
    {
+      if (SystemdHelpers.IsSystemdService())
+         _systemdNotifier = new SystemdNotifier();
+      
       try
       {
          var cmd = BuildCommandLine()
@@ -37,7 +42,7 @@ internal sealed class Program
                {
                   builder
                      .UseSystemd()
-                     .UseContentRoot(AppContext.BaseDirectory)
+                     .UseContentRoot(MidiSettings.ConfigPath)
                      .ConfigureServices(ConfigureHostServices);
                })
             .UseDefaults()
@@ -86,5 +91,19 @@ internal sealed class Program
       foreach (var option in Options) rootCommand.AddOption(option);
 
       return new CommandLineBuilder(rootCommand);
+   }
+
+   public static void SystemdNotifyReady()
+   {
+      if (!SystemdHelpers.IsSystemdService()) return;
+      
+      _systemdNotifier?.Notify(ServiceState.Ready);
+   }
+
+   public static void SystemdNotifyStopping()
+   {
+      if (!SystemdHelpers.IsSystemdService()) return;
+      
+      _systemdNotifier?.Notify(ServiceState.Stopping);
    }
 }

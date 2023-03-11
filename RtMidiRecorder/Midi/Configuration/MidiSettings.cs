@@ -10,6 +10,9 @@ public class MidiSettings
    public const double USecPerMinute = 60000000;
    public const long DrumNoteDuration = (long)MidiStreamWriter.NoteDurations.SixtyFourthNote;
 
+   public static string ConfigPath { get; set; } =
+      Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rtmidi-recorder");
+
    /**
     * <summary>Set this to automatically connect to this port on startup.</summary>
     */
